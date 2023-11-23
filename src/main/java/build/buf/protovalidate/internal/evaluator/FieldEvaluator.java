@@ -16,9 +16,11 @@ package build.buf.protovalidate.internal.evaluator;
 
 import build.buf.protovalidate.ValidationResult;
 import build.buf.protovalidate.exceptions.ExecutionException;
-import build.buf.validate.Violation;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
+import kotlin.Unit;
+import protokt.v1.buf.validate.Violation;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -71,11 +73,14 @@ class FieldEvaluator implements Evaluator {
     if (required && !hasField) {
       return new ValidationResult(
           Collections.singletonList(
-              Violation.newBuilder()
-                  .setFieldPath(descriptor.getName())
-                  .setConstraintId("required")
-                  .setMessage("value is required")
-                  .build()));
+              Violation.Deserializer.invoke(builder -> {
+                  builder.setFieldPath(descriptor.getName());
+                  builder.setConstraintId("required");
+                  builder.setMessage("value is required");
+                  return Unit.INSTANCE;
+              })
+          )
+      );
     }
     if (ignoreEmpty && !hasField) {
       return ValidationResult.EMPTY;

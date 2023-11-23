@@ -16,9 +16,11 @@ package build.buf.protovalidate.internal.evaluator;
 
 import build.buf.protovalidate.ValidationResult;
 import build.buf.protovalidate.exceptions.ExecutionException;
-import build.buf.validate.Violation;
 import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.Message;
+import kotlin.Unit;
+import protokt.v1.buf.validate.Violation;
+
 import java.util.Collections;
 
 /** {@link OneofEvaluator} performs validation on a oneof union. */
@@ -54,11 +56,14 @@ public class OneofEvaluator implements Evaluator {
     if (required && (message.getOneofFieldDescriptor(descriptor) == null)) {
       return new ValidationResult(
           Collections.singletonList(
-              Violation.newBuilder()
-                  .setFieldPath(descriptor.getName())
-                  .setConstraintId("required")
-                  .setMessage("exactly one field is required in oneof")
-                  .build()));
+              Violation.Deserializer.invoke(builder -> {
+                  builder.setFieldPath(descriptor.getName());
+                  builder.setConstraintId("required");
+                  builder.setMessage("exactly one field is required in oneof");
+                  return Unit.INSTANCE;
+              })
+          )
+      );
     }
     return ValidationResult.EMPTY;
   }

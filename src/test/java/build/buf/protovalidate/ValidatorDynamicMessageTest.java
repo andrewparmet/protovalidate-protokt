@@ -16,7 +16,6 @@ package build.buf.protovalidate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import build.buf.validate.Violation;
 import com.example.noimports.validationtest.ExampleFieldConstraints;
 import com.example.noimports.validationtest.ExampleMessageConstraints;
 import com.example.noimports.validationtest.ExampleOneofConstraints;

@@ -16,8 +16,10 @@ package build.buf.protovalidate.internal.evaluator;
 
 import build.buf.protovalidate.ValidationResult;
 import build.buf.protovalidate.exceptions.ExecutionException;
-import build.buf.validate.Violation;
-import com.google.protobuf.Descriptors.Descriptor;
+import kotlin.Unit;
+import protokt.v1.buf.validate.Violation;
+import protokt.v1.google.protobuf.Descriptor;
+
 import java.util.Collections;
 
 /**
@@ -42,8 +44,11 @@ class UnknownDescriptorEvaluator implements Evaluator {
   public ValidationResult evaluate(Value val, boolean failFast) throws ExecutionException {
     return new ValidationResult(
         Collections.singletonList(
-            Violation.newBuilder()
-                .setMessage("No evaluator available for " + desc.getFullName())
-                .build()));
+            Violation.Deserializer.invoke(builder -> {
+                builder.setMessage("No evaluator available for " + desc.getFullName());
+                return Unit.INSTANCE;
+            })
+        )
+    );
   }
 }

@@ -16,14 +16,17 @@ package build.buf.protovalidate;
 
 import build.buf.protovalidate.exceptions.CompilationException;
 import build.buf.protovalidate.exceptions.ValidationException;
+import build.buf.protovalidate.internal.FileDescriptorMapping;
+import build.buf.protovalidate.internal.FileDescriptorMappingImpl;
 import build.buf.protovalidate.internal.celext.ValidateLibrary;
 import build.buf.protovalidate.internal.evaluator.Evaluator;
 import build.buf.protovalidate.internal.evaluator.EvaluatorBuilder;
 import build.buf.protovalidate.internal.evaluator.MessageValue;
-import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.Message;
 import org.projectnessie.cel.Env;
 import org.projectnessie.cel.Library;
+import protokt.v1.KtGeneratedMessage;
+import protokt.v1.KtMessage;
+import protokt.v1.google.protobuf.Descriptor;
 
 /** Performs validation on any proto.Message values. The Validator is safe for concurrent use. */
 public class Validator {
@@ -35,6 +38,8 @@ public class Validator {
    * violation.
    */
   private final boolean failFast;
+
+  private final FileDescriptorMapping fileDescriptorMapping = new FileDescriptorMappingImpl();
 
   /**
    * Constructs a new {@link Validator}.
@@ -64,15 +69,15 @@ public class Validator {
    * type error when attempting to evaluate a CEL expression associated with the message ({@link
    * build.buf.protovalidate.exceptions.ExecutionException}).
    *
-   * @param msg the {@link Message} to be validated.
+   * @param msg the {@link KtMessage} to be validated.
    * @return the {@link ValidationResult} from the evaluation.
    * @throws ValidationException if there are any compilation or validation execution errors.
    */
-  public ValidationResult validate(Message msg) throws ValidationException {
+  public ValidationResult validate(KtMessage msg) throws ValidationException {
     if (msg == null) {
       return ValidationResult.EMPTY;
     }
-    Descriptor descriptor = msg.getDescriptorForType();
+    Descriptor descriptor = fileDescriptorMapping.fileDescriptorForSymbol(msg.getClass().getAnnotation(KtGeneratedMessage.class).fullTypeName());
     Evaluator evaluator = evaluatorBuilder.load(descriptor);
     return evaluator.evaluate(new MessageValue(msg), failFast);
   }
@@ -84,8 +89,8 @@ public class Validator {
    * @param messages the list of {@link Message} to load.
    * @throws CompilationException if there are any compilation errors during warm-up.
    */
-  public void loadMessages(Message... messages) throws CompilationException {
-    for (Message message : messages) {
+  public void loadMessages(KtMessage... messages) throws CompilationException {
+    for (KtMessage message : messages) {
       this.evaluatorBuilder.load(message.getDescriptorForType());
     }
   }

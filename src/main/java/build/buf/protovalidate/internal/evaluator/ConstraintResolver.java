@@ -15,10 +15,6 @@
 package build.buf.protovalidate.internal.evaluator;
 
 import build.buf.protovalidate.exceptions.CompilationException;
-import build.buf.validate.FieldConstraints;
-import build.buf.validate.MessageConstraints;
-import build.buf.validate.OneofConstraints;
-import build.buf.validate.ValidateProto;
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -26,6 +22,9 @@ import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.ExtensionRegistry;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageLite;
+import protokt.v1.buf.validate.FieldConstraints;
+import protokt.v1.buf.validate.MessageConstraints;
+import protokt.v1.buf.validate.OneofConstraints;
 
 /** Manages the resolution of protovalidate constraints. */
 class ConstraintResolver {
@@ -115,7 +114,7 @@ class ConstraintResolver {
     if (value instanceof MessageLite) {
       // Possible that this represents the same constraint type, just generated to a different
       // java_package.
-      return FieldConstraints.parseFrom(((MessageLite) value).toByteString());
+      return FieldConstraints.deserialize(((MessageLite) value).toByteString());
     }
     throw new CompilationException("unexpected field constraint option type: " + value);
   }

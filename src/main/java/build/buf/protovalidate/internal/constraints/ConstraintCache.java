@@ -19,7 +19,6 @@ import build.buf.protovalidate.internal.expression.AstExpression;
 import build.buf.protovalidate.internal.expression.CompiledProgram;
 import build.buf.protovalidate.internal.expression.Expression;
 import build.buf.protovalidate.internal.expression.Variable;
-import build.buf.validate.FieldConstraints;
 import build.buf.validate.priv.PrivateProto;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
@@ -38,6 +37,7 @@ import org.projectnessie.cel.ProgramOption;
 import org.projectnessie.cel.checker.Decls;
 import org.projectnessie.cel.common.types.ref.Val;
 import org.projectnessie.cel.interpreter.Activation;
+import protokt.v1.buf.validate.FieldConstraints;
 
 /** A build-through cache for computed standard constraints. */
 public class ConstraintCache {
@@ -96,9 +96,9 @@ public class ConstraintCache {
     for (Map.Entry<FieldDescriptor, Object> entry : message.getAllFields().entrySet()) {
       FieldDescriptor constraintFieldDesc = entry.getKey();
       if (!descriptorMap.containsKey(constraintFieldDesc)) {
-        build.buf.validate.priv.FieldConstraints constraints =
+        protokt.v1.buf.validate.priv.FieldConstraints constraints =
             constraintFieldDesc.getOptions().getExtension(PrivateProto.field);
-        List<Expression> expressions = Expression.fromPrivConstraints(constraints.getCelList());
+        List<Expression> expressions = Expression.fromPrivConstraints(constraints.getCel());
         List<AstExpression> astExpressions = new ArrayList<>();
         for (Expression expression : expressions) {
           astExpressions.add(AstExpression.newAstExpression(finalEnv, expression));

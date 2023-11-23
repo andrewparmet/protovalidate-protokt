@@ -22,28 +22,25 @@ import build.buf.protovalidate.internal.expression.CelPrograms;
 import build.buf.protovalidate.internal.expression.CompiledProgram;
 import build.buf.protovalidate.internal.expression.Expression;
 import build.buf.protovalidate.internal.expression.Variable;
-import build.buf.validate.Constraint;
-import build.buf.validate.FieldConstraints;
-import build.buf.validate.MessageConstraints;
-import build.buf.validate.OneofConstraints;
-import build.buf.validate.ValidateProto;
 import com.google.common.collect.ImmutableMap;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.Descriptors;
-import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.protobuf.DynamicMessage;
-import com.google.protobuf.ExtensionRegistry;
-import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+
+import com.google.protobuf.DynamicMessage;
+import com.google.protobuf.ExtensionRegistry;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.projectnessie.cel.Env;
 import org.projectnessie.cel.EnvOption;
 import org.projectnessie.cel.checker.Decls;
+import protokt.v1.buf.validate.Constraint;
+import protokt.v1.buf.validate.FieldConstraints;
+import protokt.v1.buf.validate.MessageConstraints;
+import protokt.v1.google.protobuf.Descriptor;
+import protokt.v1.google.protobuf.EnumDescriptor;
 
 /** A build-through cache of message evaluators keyed off the provided descriptor. */
 public class EvaluatorBuilder {
@@ -182,7 +179,7 @@ public class EvaluatorBuilder {
         MessageEvaluator msgEval,
         DynamicMessage message)
         throws CompilationException {
-      List<Constraint> celList = msgConstraints.getCelList();
+      List<Constraint> celList = msgConstraints.getCel();
       if (celList.isEmpty()) {
         return;
       }
@@ -200,7 +197,7 @@ public class EvaluatorBuilder {
 
     private void processOneofConstraints(Descriptor desc, MessageEvaluator msgEval)
         throws InvalidProtocolBufferException, CompilationException {
-      List<Descriptors.OneofDescriptor> oneofs = desc.getOneofs();
+      List<OneofDescriptor> oneofs = desc.getProto().getOneofDecl();
       for (Descriptors.OneofDescriptor oneofDesc : oneofs) {
         OneofConstraints oneofConstraints =
             resolver.resolveOneofConstraints(oneofDesc, EXTENSION_REGISTRY);
@@ -301,7 +298,7 @@ public class EvaluatorBuilder {
         FieldConstraints fieldConstraints,
         ValueEvaluator valueEvaluatorEval)
         throws CompilationException {
-      List<Constraint> constraintsCelList = fieldConstraints.getCelList();
+      List<Constraint> constraintsCelList = fieldConstraints.getCel();
       if (constraintsCelList.isEmpty()) {
         return;
       }
@@ -421,7 +418,7 @@ public class EvaluatorBuilder {
         return;
       }
       if (fieldConstraints.getEnum().getDefinedOnly()) {
-        Descriptors.EnumDescriptor enumDescriptor = fieldDescriptor.getEnumType();
+        EnumDescriptor enumDescriptor = fieldDescriptor.getEnumType();
         valueEvaluatorEval.append(new EnumEvaluator(enumDescriptor.getValues()));
       }
     }

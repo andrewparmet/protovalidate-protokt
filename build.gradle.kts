@@ -10,7 +10,11 @@ plugins {
     alias(libs.plugins.errorprone)
     alias(libs.plugins.git)
     alias(libs.plugins.maven)
+    id("org.jetbrains.kotlin.jvm") version "1.9.20"
+    id("com.toasttab.protokt") version "1.0.0-alpha.10"
 }
+
+
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -274,10 +278,14 @@ dependencies {
     implementation(libs.guava)
     implementation(libs.ipaddress)
     implementation(libs.jakarta.mail.api)
+    implementation("io.github.classgraph:classgraph:4.8.153")
+    implementation(kotlin("reflect"))
 
     testImplementation(libs.assertj)
     testImplementation(platform(libs.junit.bom))
     testImplementation("org.junit.jupiter:junit-jupiter")
 
     errorprone(libs.errorprone)
+
+    protobuf("build.buf:protovalidate:0.1.5")
 }

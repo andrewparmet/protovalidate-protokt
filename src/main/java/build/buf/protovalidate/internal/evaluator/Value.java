@@ -14,7 +14,8 @@
 
 package build.buf.protovalidate.internal.evaluator;
 
-import com.google.protobuf.Message;
+import protokt.v1.KtMessage;
+
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -25,13 +26,13 @@ import javax.annotation.Nullable;
  */
 public interface Value {
   /**
-   * Get the underlying value as a {@link Message} type.
+   * Get the underlying value as a {@link KtMessage} type.
    *
-   * @return The underlying {@link Message} value. null if the underlying value is not a {@link
-   *     Message} type.
+   * @return The underlying {@link KtMessage} value. null if the underlying value is not a {@link
+   *     KtMessage} type.
    */
   @Nullable
-  Message messageValue();
+  KtMessage messageValue();
 
   /**
    * Get the underlying value and cast it to the class type.

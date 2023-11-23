@@ -16,9 +16,10 @@ package build.buf.protovalidate.internal.evaluator;
 
 import build.buf.protovalidate.ValidationResult;
 import build.buf.protovalidate.exceptions.ExecutionException;
-import build.buf.validate.FieldConstraints;
-import build.buf.validate.Violation;
 import com.google.protobuf.Descriptors;
+import protokt.v1.buf.validate.FieldConstraints;
+import protokt.v1.buf.validate.Violation;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

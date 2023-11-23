@@ -14,7 +14,8 @@
 
 package build.buf.protovalidate.internal.expression;
 
-import build.buf.validate.priv.Constraint;
+import protokt.v1.buf.validate.priv.Constraint;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,7 +48,7 @@ public class Expression {
    *
    * @param constraint The constraint to create the expression from.
    */
-  private Expression(build.buf.validate.Constraint constraint) {
+  private Expression(protokt.v1.buf.validate.Constraint constraint) {
     this(constraint.getId(), constraint.getMessage(), constraint.getExpression());
   }
 
@@ -56,7 +57,7 @@ public class Expression {
    *
    * @param constraint The private constraint to create the expression from.
    */
-  private Expression(build.buf.validate.priv.Constraint constraint) {
+  private Expression(protokt.v1.buf.validate.priv.Constraint constraint) {
     this(constraint.getId(), constraint.getMessage(), constraint.getExpression());
   }
 
@@ -67,7 +68,7 @@ public class Expression {
    * @return The list of expressions.
    */
   public static List<Expression> fromPrivConstraints(
-      List<build.buf.validate.priv.Constraint> constraints) {
+      List<protokt.v1.buf.validate.priv.Constraint> constraints) {
     List<Expression> expressions = new ArrayList<>();
     for (Constraint constraint : constraints) {
       expressions.add(new Expression(constraint));
@@ -81,9 +82,9 @@ public class Expression {
    * @param constraints The list of constraints.
    * @return The list of expressions.
    */
-  public static List<Expression> fromConstraints(List<build.buf.validate.Constraint> constraints) {
+  public static List<Expression> fromConstraints(List<protokt.v1.buf.validate.Constraint> constraints) {
     List<Expression> expressions = new ArrayList<>();
-    for (build.buf.validate.Constraint constraint : constraints) {
+    for (protokt.v1.buf.validate.Constraint constraint : constraints) {
       expressions.add(new Expression(constraint));
     }
     return expressions;

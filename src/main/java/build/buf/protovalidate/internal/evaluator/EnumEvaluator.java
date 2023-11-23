@@ -16,8 +16,10 @@ package build.buf.protovalidate.internal.evaluator;
 
 import build.buf.protovalidate.ValidationResult;
 import build.buf.protovalidate.exceptions.ExecutionException;
-import build.buf.validate.Violation;
 import com.google.protobuf.Descriptors;
+import kotlin.Unit;
+import protokt.v1.buf.validate.Violation;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -69,10 +71,13 @@ class EnumEvaluator implements Evaluator {
     if (!values.contains(enumValue.getNumber())) {
       return new ValidationResult(
           Collections.singletonList(
-              Violation.newBuilder()
-                  .setConstraintId("enum.defined_only")
-                  .setMessage("value must be one of the defined enum values")
-                  .build()));
+              Violation.Deserializer.invoke(builder -> {
+                  builder.setConstraintId("enum.defined_only");
+                  builder.setMessage("value must be one of the defined enum values");
+                  return Unit.INSTANCE;
+              })
+          )
+      );
     }
     return ValidationResult.EMPTY;
   }

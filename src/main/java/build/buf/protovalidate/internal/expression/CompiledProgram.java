@@ -15,11 +15,14 @@
 package build.buf.protovalidate.internal.expression;
 
 import build.buf.protovalidate.exceptions.ExecutionException;
-import build.buf.validate.Violation;
+
 import javax.annotation.Nullable;
+
+import kotlin.Unit;
 import org.projectnessie.cel.Program;
 import org.projectnessie.cel.common.types.Err;
 import org.projectnessie.cel.common.types.ref.Val;
+import protokt.v1.buf.validate.Violation;
 
 /**
  * {@link CompiledProgram} is a parsed and type-checked {@link Program} along with the source {@link
@@ -47,7 +50,7 @@ public class CompiledProgram {
    * Evaluate the compiled program with a given set of {@link Variable} bindings.
    *
    * @param bindings Variable bindings used for the evaluation.
-   * @return The {@link build.buf.validate.Violation} from the evaluation, or null if there are no
+   * @return The {@link protokt.v1.buf.validate.Violation} from the evaluation, or null if there are no
    *     violations.
    * @throws ExecutionException If the evaluation of the CEL program fails with an error.
    */
@@ -63,18 +66,20 @@ public class CompiledProgram {
       if ("".equals(value)) {
         return null;
       }
-      return Violation.newBuilder()
-          .setConstraintId(this.source.id)
-          .setMessage(value.toString())
-          .build();
+      return Violation.Deserializer.invoke(builder -> {
+          builder.setConstraintId(this.source.id);
+          builder.setMessage(value.toString());
+          return Unit.INSTANCE;
+      });
     } else if (value instanceof Boolean) {
       if (val.booleanValue()) {
         return null;
       }
-      return Violation.newBuilder()
-          .setConstraintId(this.source.id)
-          .setMessage(this.source.message)
-          .build();
+      return Violation.Deserializer.invoke(builder -> {
+        builder.setConstraintId(this.source.id);
+        builder.setMessage(this.source.message);
+        return Unit.INSTANCE;
+      });
     } else {
       throw new ExecutionException(String.format("resolved to an unexpected type %s", val));
     }

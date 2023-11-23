@@ -16,9 +16,11 @@ package build.buf.protovalidate.internal.evaluator;
 
 import build.buf.protovalidate.ValidationResult;
 import build.buf.protovalidate.exceptions.ExecutionException;
-import build.buf.validate.Violation;
 import com.google.protobuf.Descriptors;
-import com.google.protobuf.Message;
+import kotlin.Unit;
+import protokt.v1.KtMessage;
+import protokt.v1.buf.validate.Violation;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -26,7 +28,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * A specialized evaluator for applying {@link build.buf.validate.AnyRules} to an {@link
+ * A specialized evaluator for applying {@link protokt.v1.buf.validate.AnyRules} to an {@link
  * com.google.protobuf.Any} message. This is handled outside CEL which attempts to hydrate {@link
  * com.google.protobuf.Any}'s within an expression, breaking evaluation if the type is unknown at
  * runtime.
@@ -36,7 +38,7 @@ class AnyEvaluator implements Evaluator {
   private final Set<String> in;
   private final Set<String> notIn;
 
-  /** Constructs a new evaluator for {@link build.buf.validate.AnyRules} messages. */
+  /** Constructs a new evaluator for {@link protokt.v1.buf.validate.AnyRules} messages. */
   AnyEvaluator(Descriptors.FieldDescriptor typeURLDescriptor, List<String> in, List<String> notIn) {
     this.typeURLDescriptor = typeURLDescriptor;
     this.in = stringsToSet(in);
@@ -45,7 +47,7 @@ class AnyEvaluator implements Evaluator {
 
   @Override
   public ValidationResult evaluate(Value val, boolean failFast) throws ExecutionException {
-    Message anyValue = val.messageValue();
+    KtMessage anyValue = val.messageValue();
     if (anyValue == null) {
       return ValidationResult.EMPTY;
     }
@@ -53,10 +55,11 @@ class AnyEvaluator implements Evaluator {
     String typeURL = (String) anyValue.getField(typeURLDescriptor);
     if (!in.isEmpty() && !in.contains(typeURL)) {
       Violation violation =
-          Violation.newBuilder()
-              .setConstraintId("any.in")
-              .setMessage("type URL must be in the allow list")
-              .build();
+          Violation.Deserializer.invoke(builder -> {
+              builder.setConstraintId("any.in");
+              builder.setMessage("type URL must be in the allow list");
+              return Unit.INSTANCE;
+          });
       violationList.add(violation);
       if (failFast) {
         return new ValidationResult(violationList);
@@ -64,10 +67,11 @@ class AnyEvaluator implements Evaluator {
     }
     if (!notIn.isEmpty() && notIn.contains(typeURL)) {
       Violation violation =
-          Violation.newBuilder()
-              .setConstraintId("any.not_in")
-              .setMessage("type URL must not be in the block list")
-              .build();
+          Violation.Deserializer.invoke(builder -> {
+              builder.setConstraintId("any.not_in");
+              builder.setMessage("type URL must not be in the block list");
+              return Unit.INSTANCE;
+          });
       violationList.add(violation);
     }
     return new ValidationResult(violationList);

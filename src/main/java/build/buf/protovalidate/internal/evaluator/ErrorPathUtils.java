@@ -14,10 +14,12 @@
 
 package build.buf.protovalidate.internal.evaluator;
 
-import build.buf.validate.Violation;
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.errorprone.annotations.FormatString;
+import kotlin.Unit;
+import protokt.v1.buf.validate.Violation;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -49,7 +51,10 @@ final class ErrorPathUtils {
               } else {
                 prefixedFieldPath = Strings.lenientFormat("%s.%s", prefix, fieldPath);
               }
-              return violation.toBuilder().setFieldPath(prefixedFieldPath).build();
+              return violation.copy(builder -> {
+                  builder.setFieldPath(prefixedFieldPath);
+                  return Unit.INSTANCE;
+              });
             })
         .collect(Collectors.toList());
   }

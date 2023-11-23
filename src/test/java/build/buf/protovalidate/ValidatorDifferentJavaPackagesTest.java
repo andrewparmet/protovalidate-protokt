@@ -17,7 +17,6 @@ package build.buf.protovalidate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import build.buf.protovalidate.exceptions.ValidationException;
-import build.buf.validate.Violation;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import java.util.Collections;

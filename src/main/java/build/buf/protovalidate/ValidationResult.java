@@ -14,7 +14,8 @@
 
 package build.buf.protovalidate;
 
-import build.buf.validate.Violation;
+import protokt.v1.buf.validate.Violation;
+
 import java.util.Collections;
 import java.util.List;
 
