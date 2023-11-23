@@ -36,11 +36,15 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.projectnessie.cel.Env;
 import org.projectnessie.cel.EnvOption;
 import org.projectnessie.cel.checker.Decls;
+import protokt.v1.Bytes;
 import protokt.v1.buf.validate.Constraint;
 import protokt.v1.buf.validate.FieldConstraints;
 import protokt.v1.buf.validate.MessageConstraints;
+import protokt.v1.buf.validate.OneofConstraints;
 import protokt.v1.google.protobuf.Descriptor;
 import protokt.v1.google.protobuf.EnumDescriptor;
+import protokt.v1.google.protobuf.FieldDescriptorProto;
+import protokt.v1.google.protobuf.OneofDescriptorProto;
 
 /** A build-through cache of message evaluators keyed off the provided descriptor. */
 public class EvaluatorBuilder {
@@ -197,8 +201,8 @@ public class EvaluatorBuilder {
 
     private void processOneofConstraints(Descriptor desc, MessageEvaluator msgEval)
         throws InvalidProtocolBufferException, CompilationException {
-      List<OneofDescriptor> oneofs = desc.getProto().getOneofDecl();
-      for (Descriptors.OneofDescriptor oneofDesc : oneofs) {
+      List<OneofDescriptorProto> oneofs = desc.getProto().getOneofDecl();
+      for (OneofDescriptorProto oneofDesc : oneofs) {
         OneofConstraints oneofConstraints =
             resolver.resolveOneofConstraints(oneofDesc, EXTENSION_REGISTRY);
         OneofEvaluator oneofEvaluatorEval =
@@ -209,9 +213,9 @@ public class EvaluatorBuilder {
 
     private void processFields(Descriptor desc, MessageEvaluator msgEval)
         throws CompilationException, InvalidProtocolBufferException {
-      List<FieldDescriptor> fields = desc.getFields();
-      for (FieldDescriptor fieldDescriptor : fields) {
-        FieldDescriptor descriptor = desc.findFieldByName(fieldDescriptor.getName());
+      List<FieldDescriptorProto> fields = desc.getProto().getField();
+      for (FieldDescriptorProto fieldDescriptor : fields) {
+        FieldDescriptorProto descriptor = desc.findFieldByName(fieldDescriptor.getName());
         FieldConstraints fieldConstraints =
             resolver.resolveFieldConstraints(descriptor, EXTENSION_REGISTRY);
         FieldEvaluator fldEval = buildField(descriptor, fieldConstraints);
@@ -220,7 +224,7 @@ public class EvaluatorBuilder {
     }
 
     private FieldEvaluator buildField(
-        FieldDescriptor fieldDescriptor, FieldConstraints fieldConstraints)
+        FieldDescriptorProto fieldDescriptor, FieldConstraints fieldConstraints)
         throws CompilationException {
       ValueEvaluator valueEvaluatorEval = new ValueEvaluator();
       FieldEvaluator fieldEvaluator =
@@ -234,7 +238,7 @@ public class EvaluatorBuilder {
     }
 
     private void buildValue(
-        FieldDescriptor fieldDescriptor,
+        FieldDescriptorProto fieldDescriptor,
         FieldConstraints fieldConstraints,
         boolean forItems,
         ValueEvaluator valueEvaluator)
@@ -251,13 +255,13 @@ public class EvaluatorBuilder {
     }
 
     private void processIgnoreEmpty(
-        FieldDescriptor fieldDescriptor,
+        FieldDescriptorProto fieldDescriptor,
         FieldConstraints fieldConstraints,
         boolean forItems,
         ValueEvaluator valueEvaluatorEval) {
       if (forItems
           && fieldConstraints.getIgnoreEmpty()
-          && fieldDescriptor.getType() != FieldDescriptor.Type.MESSAGE) {
+          && fieldDescriptor.getType() != FieldDescriptorProto.Type.MESSAGE.INSTANCE) {
         Object zero = fieldDescriptor.getDefaultValue();
         if (fieldDescriptor.isRepeated()) {
           switch (fieldDescriptor.getType().getJavaType()) {
@@ -280,7 +284,7 @@ public class EvaluatorBuilder {
               zero = "";
               break;
             case BYTE_STRING:
-              zero = ByteString.EMPTY;
+              zero = Bytes.empty();
               break;
             case ENUM:
               zero = fieldDescriptor.getEnumType().getValues().get(0);
@@ -405,8 +409,8 @@ public class EvaluatorBuilder {
       AnyEvaluator anyEvaluatorEval =
           new AnyEvaluator(
               typeURLDesc,
-              fieldConstraints.getAny().getInList(),
-              fieldConstraints.getAny().getNotInList());
+              ((FieldConstraints.Type.Any) fieldConstraints.getType()).getAny().getIn(),
+              ((FieldConstraints.Type.Any) fieldConstraints.getType()).getAny().getNotIn());
       valueEvaluatorEval.append(anyEvaluatorEval);
     }
 
@@ -417,9 +421,9 @@ public class EvaluatorBuilder {
       if (fieldDescriptor.getJavaType() != FieldDescriptor.JavaType.ENUM) {
         return;
       }
-      if (fieldConstraints.getEnum().getDefinedOnly()) {
+      if (((FieldConstraints.Type.Enum) fieldConstraints.getType()).getEnum().getDefinedOnly()) {
         EnumDescriptor enumDescriptor = fieldDescriptor.getEnumType();
-        valueEvaluatorEval.append(new EnumEvaluator(enumDescriptor.getValues()));
+        valueEvaluatorEval.append(new EnumEvaluator(enumDescriptor.getProto().getValue()));
       }
     }
 
@@ -434,12 +438,12 @@ public class EvaluatorBuilder {
       MapEvaluator mapEval = new MapEvaluator(fieldConstraints, fieldDescriptor);
       buildValue(
           fieldDescriptor.getMessageType().findFieldByNumber(1),
-          fieldConstraints.getMap().getKeys(),
+          ((FieldConstraints.Type.Map) fieldConstraints.getType()).getMap().getKeys(),
           true,
           mapEval.getKeyEvaluator());
       buildValue(
           fieldDescriptor.getMessageType().findFieldByNumber(2),
-          fieldConstraints.getMap().getValues(),
+          ((FieldConstraints.Type.Map) fieldConstraints.getType()).getMap().getValues(),
           true,
           mapEval.getValueEvaluator());
       valueEvaluatorEval.append(mapEval);
@@ -457,7 +461,7 @@ public class EvaluatorBuilder {
       ListEvaluator listEval = new ListEvaluator();
       buildValue(
           fieldDescriptor,
-          fieldConstraints.getRepeated().getItems(),
+          ((FieldConstraints.Type.Repeated) fieldConstraints.getType()).getRepeated().getItems(),
           true,
           listEval.itemConstraints);
       valueEvaluatorEval.append(listEval);

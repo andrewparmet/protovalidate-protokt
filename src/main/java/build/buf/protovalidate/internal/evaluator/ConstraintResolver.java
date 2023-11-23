@@ -22,9 +22,14 @@ import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.ExtensionRegistry;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageLite;
+import protokt.v1.KtMessage;
 import protokt.v1.buf.validate.FieldConstraints;
 import protokt.v1.buf.validate.MessageConstraints;
 import protokt.v1.buf.validate.OneofConstraints;
+import protokt.v1.google.protobuf.FieldDescriptorProto;
+import protokt.v1.google.protobuf.FieldOptions;
+import protokt.v1.google.protobuf.OneofDescriptorProto;
+import protokt.v1.google.protobuf.OneofOptions;
 
 /** Manages the resolution of protovalidate constraints. */
 class ConstraintResolver {
@@ -65,9 +70,9 @@ class ConstraintResolver {
    * @param desc the oneof descriptor.
    * @return the resolved {@link OneofConstraints}.
    */
-  OneofConstraints resolveOneofConstraints(OneofDescriptor desc, ExtensionRegistry registry)
-      throws InvalidProtocolBufferException, CompilationException {
-    DescriptorProtos.OneofOptions options = desc.getOptions();
+  OneofConstraints resolveOneofConstraints(OneofDescriptorProto desc, ExtensionRegistry registry)
+      throws CompilationException {
+    OneofOptions options = desc.getOptions();
     // If the protovalidate oneof extension is unknown, reparse using extension registry.
     if (options.getUnknownFields().hasField(ValidateProto.oneof.getNumber())) {
       options = DescriptorProtos.OneofOptions.parseFrom(options.toByteString(), registry);
@@ -95,9 +100,9 @@ class ConstraintResolver {
    * @param desc the field descriptor.
    * @return the resolved {@link FieldConstraints}.
    */
-  FieldConstraints resolveFieldConstraints(FieldDescriptor desc, ExtensionRegistry registry)
+  FieldConstraints resolveFieldConstraints(FieldDescriptorProto desc, ExtensionRegistry registry)
       throws InvalidProtocolBufferException, CompilationException {
-    DescriptorProtos.FieldOptions options = desc.getOptions();
+    FieldOptions options = desc.getOptions();
     // If the protovalidate field option is unknown, reparse using extension registry.
     if (options.getUnknownFields().hasField(ValidateProto.field.getNumber())) {
       options = DescriptorProtos.FieldOptions.parseFrom(options.toByteString(), registry);
@@ -111,10 +116,10 @@ class ConstraintResolver {
     if (value instanceof FieldConstraints) {
       return ((FieldConstraints) value);
     }
-    if (value instanceof MessageLite) {
+    if (value instanceof KtMessage) {
       // Possible that this represents the same constraint type, just generated to a different
       // java_package.
-      return FieldConstraints.deserialize(((MessageLite) value).toByteString());
+      return FieldConstraints.deserialize(((KtMessage) value).serialize());
     }
     throw new CompilationException("unexpected field constraint option type: " + value);
   }

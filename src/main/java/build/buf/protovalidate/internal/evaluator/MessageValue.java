@@ -15,6 +15,8 @@
 package build.buf.protovalidate.internal.evaluator;
 
 import com.google.protobuf.Message;
+import protokt.v1.KtMessage;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -38,8 +40,8 @@ public final class MessageValue implements Value {
   }
 
   @Override
-  public Message messageValue() {
-    return (Message) value;
+  public KtMessage messageValue() {
+    return (KtMessage) value;
   }
 
   @Override

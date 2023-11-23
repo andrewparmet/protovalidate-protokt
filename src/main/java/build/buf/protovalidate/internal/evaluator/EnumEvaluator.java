@@ -16,9 +16,9 @@ package build.buf.protovalidate.internal.evaluator;
 
 import build.buf.protovalidate.ValidationResult;
 import build.buf.protovalidate.exceptions.ExecutionException;
-import com.google.protobuf.Descriptors;
 import kotlin.Unit;
 import protokt.v1.buf.validate.Violation;
+import protokt.v1.google.protobuf.EnumValueDescriptorProto;
 
 import java.util.Collections;
 import java.util.List;
@@ -36,15 +36,15 @@ class EnumEvaluator implements Evaluator {
   /**
    * Constructs a new evaluator for enum values.
    *
-   * @param valueDescriptors the list of {@link Descriptors.EnumValueDescriptor} for the enum.
+   * @param valueDescriptors the list of {@link EnumValueDescriptorProto} for the enum.
    */
-  EnumEvaluator(List<Descriptors.EnumValueDescriptor> valueDescriptors) {
+  EnumEvaluator(List<EnumValueDescriptorProto> valueDescriptors) {
     if (valueDescriptors.isEmpty()) {
       this.values = Collections.emptySet();
     } else {
       this.values =
           valueDescriptors.stream()
-              .map(Descriptors.EnumValueDescriptor::getNumber)
+              .map(EnumValueDescriptorProto::getNumber)
               .collect(Collectors.toSet());
     }
   }
@@ -64,7 +64,7 @@ class EnumEvaluator implements Evaluator {
    */
   @Override
   public ValidationResult evaluate(Value val, boolean failFast) throws ExecutionException {
-    Descriptors.EnumValueDescriptor enumValue = val.value(Descriptors.EnumValueDescriptor.class);
+    EnumValueDescriptorProto enumValue = val.value(EnumValueDescriptorProto.class);
     if (enumValue == null) {
       return ValidationResult.EMPTY;
     }
