@@ -86,7 +86,7 @@ public class Validator {
    * Loads messages that are expected to be validated, allowing the {@link Validator} to warm up.
    * Messages included transitively (i.e., fields with message values) are automatically handled.
    *
-   * @param messages the list of {@link Message} to load.
+   * @param messages the list of {@link KtMessage} to load.
    * @throws CompilationException if there are any compilation errors during warm-up.
    */
   public void loadMessages(KtMessage... messages) throws CompilationException {

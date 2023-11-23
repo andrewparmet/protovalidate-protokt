@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.projectnessie.cel.common.ULong;
+import protokt.v1.KtMessage;
 
 /**
  * The {@link build.buf.protovalidate.internal.evaluator.Value} type that contains a field
@@ -52,9 +53,9 @@ public final class ObjectValue implements Value {
 
   @Nullable
   @Override
-  public Message messageValue() {
+  public KtMessage messageValue() {
     if (fieldDescriptor.getType() == Descriptors.FieldDescriptor.Type.MESSAGE) {
-      return (Message) value;
+      return (KtMessage) value;
     }
     return null;
   }

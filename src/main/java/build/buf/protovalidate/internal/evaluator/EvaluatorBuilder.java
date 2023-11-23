@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
+import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.ExtensionRegistry;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -43,7 +44,9 @@ import protokt.v1.buf.validate.MessageConstraints;
 import protokt.v1.buf.validate.OneofConstraints;
 import protokt.v1.google.protobuf.Descriptor;
 import protokt.v1.google.protobuf.EnumDescriptor;
+import protokt.v1.google.protobuf.FieldDescriptor;
 import protokt.v1.google.protobuf.FieldDescriptorProto;
+import protokt.v1.google.protobuf.OneofDescriptor;
 import protokt.v1.google.protobuf.OneofDescriptorProto;
 
 /** A build-through cache of message evaluators keyed off the provided descriptor. */
@@ -201,8 +204,8 @@ public class EvaluatorBuilder {
 
     private void processOneofConstraints(Descriptor desc, MessageEvaluator msgEval)
         throws InvalidProtocolBufferException, CompilationException {
-      List<OneofDescriptorProto> oneofs = desc.getProto().getOneofDecl();
-      for (OneofDescriptorProto oneofDesc : oneofs) {
+      List<OneofDescriptor> oneofs = desc.getOneofs();
+      for (OneofDescriptor oneofDesc : oneofs) {
         OneofConstraints oneofConstraints =
             resolver.resolveOneofConstraints(oneofDesc, EXTENSION_REGISTRY);
         OneofEvaluator oneofEvaluatorEval =
@@ -213,9 +216,9 @@ public class EvaluatorBuilder {
 
     private void processFields(Descriptor desc, MessageEvaluator msgEval)
         throws CompilationException, InvalidProtocolBufferException {
-      List<FieldDescriptorProto> fields = desc.getProto().getField();
-      for (FieldDescriptorProto fieldDescriptor : fields) {
-        FieldDescriptorProto descriptor = desc.findFieldByName(fieldDescriptor.getName());
+      List<FieldDescriptor> fields = desc.getFields();
+      for (FieldDescriptor fieldDescriptor : fields) {
+        FieldDescriptor descriptor = desc.findFieldByName(fieldDescriptor.getName());
         FieldConstraints fieldConstraints =
             resolver.resolveFieldConstraints(descriptor, EXTENSION_REGISTRY);
         FieldEvaluator fldEval = buildField(descriptor, fieldConstraints);
@@ -224,7 +227,7 @@ public class EvaluatorBuilder {
     }
 
     private FieldEvaluator buildField(
-        FieldDescriptorProto fieldDescriptor, FieldConstraints fieldConstraints)
+        FieldDescriptor fieldDescriptor, FieldConstraints fieldConstraints)
         throws CompilationException {
       ValueEvaluator valueEvaluatorEval = new ValueEvaluator();
       FieldEvaluator fieldEvaluator =
@@ -232,13 +235,13 @@ public class EvaluatorBuilder {
               valueEvaluatorEval,
               fieldDescriptor,
               fieldConstraints.getRequired(),
-              fieldConstraints.getIgnoreEmpty() || fieldDescriptor.hasPresence());
+              fieldConstraints.getIgnoreEmpty() || fieldDescriptor.getHasPresence());
       buildValue(fieldDescriptor, fieldConstraints, false, fieldEvaluator.valueEvaluator);
       return fieldEvaluator;
     }
 
     private void buildValue(
-        FieldDescriptorProto fieldDescriptor,
+        FieldDescriptor fieldDescriptor,
         FieldConstraints fieldConstraints,
         boolean forItems,
         ValueEvaluator valueEvaluator)
@@ -255,39 +258,40 @@ public class EvaluatorBuilder {
     }
 
     private void processIgnoreEmpty(
-        FieldDescriptorProto fieldDescriptor,
+        FieldDescriptor fieldDescriptor,
         FieldConstraints fieldConstraints,
         boolean forItems,
         ValueEvaluator valueEvaluatorEval) {
       if (forItems
           && fieldConstraints.getIgnoreEmpty()
-          && fieldDescriptor.getType() != FieldDescriptorProto.Type.MESSAGE.INSTANCE) {
+          && fieldDescriptor.getProto().getType() != FieldDescriptorProto.Type.MESSAGE.INSTANCE) {
         Object zero = fieldDescriptor.getDefaultValue();
         if (fieldDescriptor.isRepeated()) {
-          switch (fieldDescriptor.getType().getJavaType()) {
-            case INT:
+          switch (fieldDescriptor.getProto().getType().getName()) {
+              // todo: protokt kotlin types
+            case "INT":
               zero = 0;
               break;
-            case LONG:
+            case "LONG":
               zero = 0L;
               break;
-            case FLOAT:
+            case "FLOAT":
               zero = 0F;
               break;
-            case DOUBLE:
+            case "DOUBLE":
               zero = 0D;
               break;
-            case BOOLEAN:
+            case "BOOLEAN":
               zero = false;
               break;
-            case STRING:
+            case "STRING":
               zero = "";
               break;
-            case BYTE_STRING:
+            case "BYTE_STRING":
               zero = Bytes.empty();
               break;
-            case ENUM:
-              zero = fieldDescriptor.getEnumType().getValues().get(0);
+            case "ENUM":
+              zero = fieldDescriptor.getEnumType().getProto().getValue().stream().filter(it -> it.getNumber().equals(0)).findFirst().get();
               break;
             default:
               // noop
@@ -307,7 +311,7 @@ public class EvaluatorBuilder {
         return;
       }
       List<EnvOption> opts;
-      if (fieldDescriptor.getType() == FieldDescriptor.Type.MESSAGE) {
+      if (fieldDescriptor.getProto().getType() == FieldDescriptorProto.Type.MESSAGE.INSTANCE) {
         try {
           DynamicMessage defaultInstance =
               DynamicMessage.parseFrom(
@@ -328,7 +332,7 @@ public class EvaluatorBuilder {
                 EnvOption.declarations(
                     Decls.newVar(
                         Variable.THIS_NAME,
-                        DescriptorMappings.protoKindToCELType(fieldDescriptor.getType()))));
+                        DescriptorMappings.protoKindToCELType(fieldDescriptor.getProto().getType()))));
       }
       Env finalEnv = env.extend(opts.toArray(new EnvOption[0]));
       List<CompiledProgram> compiledPrograms = compileConstraints(constraintsCelList, finalEnv);
@@ -343,9 +347,9 @@ public class EvaluatorBuilder {
         boolean forItems,
         ValueEvaluator valueEvaluatorEval)
         throws CompilationException {
-      if (fieldDescriptor.getType() != FieldDescriptor.Type.MESSAGE
+      if (fieldDescriptor.getProto().getType() != FieldDescriptorProto.Type.MESSAGE.INSTANCE
           || fieldConstraints.getSkipped()
-          || fieldDescriptor.isMapField()
+          || fieldDescriptor.isMap()
           || (fieldDescriptor.isRepeated() && !forItems)) {
         return;
       }
@@ -359,9 +363,9 @@ public class EvaluatorBuilder {
         boolean forItems,
         ValueEvaluator valueEvaluatorEval)
         throws CompilationException {
-      if (fieldDescriptor.getType() != FieldDescriptor.Type.MESSAGE
+      if (fieldDescriptor.getProto().getType() != FieldDescriptorProto.Type.MESSAGE.INSTANCE
           || fieldConstraints.getSkipped()
-          || fieldDescriptor.isMapField()
+          || fieldDescriptor.isMap()
           || (fieldDescriptor.isRepeated() && !forItems)) {
         return;
       }
@@ -401,7 +405,7 @@ public class EvaluatorBuilder {
         boolean forItems,
         ValueEvaluator valueEvaluatorEval) {
       if ((fieldDescriptor.isRepeated() && !forItems)
-          || fieldDescriptor.getType() != FieldDescriptor.Type.MESSAGE
+          || fieldDescriptor.getProto().getType() != FieldDescriptorProto.Type.MESSAGE.INSTANCE
           || !fieldDescriptor.getMessageType().getFullName().equals("google.protobuf.Any")) {
         return;
       }
@@ -418,7 +422,7 @@ public class EvaluatorBuilder {
         FieldDescriptor fieldDescriptor,
         FieldConstraints fieldConstraints,
         ValueEvaluator valueEvaluatorEval) {
-      if (fieldDescriptor.getJavaType() != FieldDescriptor.JavaType.ENUM) {
+      if (fieldDescriptor.getProto().getType() != FieldDescriptorProto.Type.ENUM.INSTANCE) {
         return;
       }
       if (((FieldConstraints.Type.Enum) fieldConstraints.getType()).getEnum().getDefinedOnly()) {
@@ -432,12 +436,12 @@ public class EvaluatorBuilder {
         FieldConstraints fieldConstraints,
         ValueEvaluator valueEvaluatorEval)
         throws CompilationException {
-      if (!fieldDescriptor.isMapField()) {
+      if (!fieldDescriptor.isMap()) {
         return;
       }
       MapEvaluator mapEval = new MapEvaluator(fieldConstraints, fieldDescriptor);
       buildValue(
-          fieldDescriptor.getMessageType().findFieldByNumber(1),
+          fieldDescriptor.getMessage().findFieldByNumber(1),
           ((FieldConstraints.Type.Map) fieldConstraints.getType()).getMap().getKeys(),
           true,
           mapEval.getKeyEvaluator());

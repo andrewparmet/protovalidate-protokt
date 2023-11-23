@@ -15,20 +15,23 @@
 package build.buf.protovalidate.internal.constraints;
 
 import com.google.api.expr.v1alpha1.Type;
-import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.protobuf.Descriptors.OneofDescriptor;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.projectnessie.cel.checker.Decls;
+import protokt.v1.buf.validate.FieldConstraints;
+import protokt.v1.buf.validate.ValidateKt;
+import protokt.v1.google.protobuf.Descriptor;
+import protokt.v1.google.protobuf.FieldDescriptor;
+import protokt.v1.google.protobuf.FieldDescriptorProto;
+import protokt.v1.google.protobuf.OneofDescriptor;
 
 /**
  * DescriptorMappings provides mappings between protocol buffer descriptors and CEL declarations.
  */
 public class DescriptorMappings {
   /** Provides a {@link Descriptor} for {@link FieldConstraints}. */
-  static final Descriptor FIELD_CONSTRAINTS_DESC = FieldConstraints.getDescriptor();
+  static final Descriptor FIELD_CONSTRAINTS_DESC = ValidateKt.getDescriptor(FieldConstraints.Deserializer);
 
   /** Provides the {@link OneofDescriptor} for the type union in {@link FieldConstraints}. */
   static final OneofDescriptor FIELD_CONSTRAINTS_ONEOF_DESC =
@@ -43,7 +46,7 @@ public class DescriptorMappings {
       FIELD_CONSTRAINTS_DESC.findFieldByName("repeated");
 
   /** Maps protocol buffer field kinds to their expected field constraints. */
-  static final Map<FieldDescriptor.Type, FieldDescriptor> EXPECTED_STANDARD_CONSTRAINTS =
+  static final Map<FieldDescriptorProto.Type, FieldDescriptor> EXPECTED_STANDARD_CONSTRAINTS =
       new HashMap<>();
 
   /**
@@ -55,37 +58,37 @@ public class DescriptorMappings {
 
   static {
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.FLOAT, FIELD_CONSTRAINTS_DESC.findFieldByName("float"));
+        FieldDescriptorProto.Type.FLOAT.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("float"));
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.DOUBLE, FIELD_CONSTRAINTS_DESC.findFieldByName("double"));
+        FieldDescriptorProto.Type.DOUBLE.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("double"));
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.INT32, FIELD_CONSTRAINTS_DESC.findFieldByName("int32"));
+        FieldDescriptorProto.Type.INT32.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("int32"));
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.INT64, FIELD_CONSTRAINTS_DESC.findFieldByName("int64"));
+        FieldDescriptorProto.Type.INT64.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("int64"));
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.UINT32, FIELD_CONSTRAINTS_DESC.findFieldByName("uint32"));
+        FieldDescriptorProto.Type.UINT32.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("uint32"));
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.UINT64, FIELD_CONSTRAINTS_DESC.findFieldByName("uint64"));
+        FieldDescriptorProto.Type.UINT64.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("uint64"));
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.SINT32, FIELD_CONSTRAINTS_DESC.findFieldByName("sint32"));
+        FieldDescriptorProto.Type.SINT32.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("sint32"));
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.SINT64, FIELD_CONSTRAINTS_DESC.findFieldByName("sint64"));
+        FieldDescriptorProto.Type.SINT64.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("sint64"));
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.FIXED32, FIELD_CONSTRAINTS_DESC.findFieldByName("fixed32"));
+        FieldDescriptorProto.Type.FIXED32.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("fixed32"));
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.FIXED64, FIELD_CONSTRAINTS_DESC.findFieldByName("fixed64"));
+        FieldDescriptorProto.Type.FIXED64.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("fixed64"));
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.SFIXED32, FIELD_CONSTRAINTS_DESC.findFieldByName("sfixed32"));
+        FieldDescriptorProto.Type.SFIXED32.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("sfixed32"));
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.SFIXED64, FIELD_CONSTRAINTS_DESC.findFieldByName("sfixed64"));
+        FieldDescriptorProto.Type.SFIXED64.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("sfixed64"));
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.BOOL, FIELD_CONSTRAINTS_DESC.findFieldByName("bool"));
+        FieldDescriptorProto.Type.BOOL.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("bool"));
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.STRING, FIELD_CONSTRAINTS_DESC.findFieldByName("string"));
+        FieldDescriptorProto.Type.STRING.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("string"));
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.BYTES, FIELD_CONSTRAINTS_DESC.findFieldByName("bytes"));
+        FieldDescriptorProto.Type.BYTES.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("bytes"));
     EXPECTED_STANDARD_CONSTRAINTS.put(
-        FieldDescriptor.Type.ENUM, FIELD_CONSTRAINTS_DESC.findFieldByName("enum"));
+        FieldDescriptorProto.Type.ENUM.INSTANCE, FIELD_CONSTRAINTS_DESC.findFieldByName("enum"));
 
     EXPECTED_WKT_CONSTRAINTS.put(
         "google.protobuf.Any", FIELD_CONSTRAINTS_DESC.findFieldByName("any"));
@@ -103,58 +106,58 @@ public class DescriptorMappings {
   public static FieldDescriptor expectedWrapperConstraints(String fqn) {
     switch (fqn) {
       case "google.protobuf.BoolValue":
-        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptor.Type.BOOL);
+        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptorProto.Type.BOOL.INSTANCE);
       case "google.protobuf.BytesValue":
-        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptor.Type.BYTES);
+        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptorProto.Type.BYTES.INSTANCE);
       case "google.protobuf.DoubleValue":
-        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptor.Type.DOUBLE);
+        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptorProto.Type.DOUBLE.INSTANCE);
       case "google.protobuf.FloatValue":
-        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptor.Type.FLOAT);
+        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptorProto.Type.FLOAT.INSTANCE);
       case "google.protobuf.Int32Value":
-        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptor.Type.INT32);
+        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptorProto.Type.INT32.INSTANCE);
       case "google.protobuf.Int64Value":
-        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptor.Type.INT64);
+        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptorProto.Type.INT64.INSTANCE);
       case "google.protobuf.StringValue":
-        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptor.Type.STRING);
+        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptorProto.Type.STRING.INSTANCE);
       case "google.protobuf.UInt32Value":
-        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptor.Type.UINT32);
+        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptorProto.Type.UINT32.INSTANCE);
       case "google.protobuf.UInt64Value":
-        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptor.Type.UINT64);
+        return EXPECTED_STANDARD_CONSTRAINTS.get(FieldDescriptorProto.Type.UINT64.INSTANCE);
       default:
         return null;
     }
   }
 
   /**
-   * Maps a {@link FieldDescriptor.Type} to a compatible {@link com.google.api.expr.v1alpha1.Type}.
+   * Maps a {@link FieldDescriptorProto.Type} to a compatible {@link com.google.api.expr.v1alpha1.Type}.
    */
-  public static Type protoKindToCELType(FieldDescriptor.Type kind) {
-    switch (kind) {
-      case FLOAT:
-      case DOUBLE:
+  public static Type protoKindToCELType(FieldDescriptorProto.Type kind) {
+    switch (kind.getName()) {
+      case "FLOAT":
+      case "DOUBLE":
         return Decls.newPrimitiveType(Type.PrimitiveType.DOUBLE);
-      case INT32:
-      case INT64:
-      case SINT32:
-      case SINT64:
-      case SFIXED32:
-      case SFIXED64:
-      case ENUM:
+      case "INT32":
+      case "INT64":
+      case "SINT32":
+      case "SINT64":
+      case "SFIXED32":
+      case "SFIXED64":
+      case "ENUM":
         return Decls.newPrimitiveType(Type.PrimitiveType.INT64);
-      case UINT32:
-      case UINT64:
-      case FIXED32:
-      case FIXED64:
+      case "UINT32":
+      case "UINT64":
+      case "FIXED32":
+      case "FIXED64":
         return Decls.newPrimitiveType(Type.PrimitiveType.UINT64);
-      case BOOL:
+      case "BOOL":
         return Decls.newPrimitiveType(Type.PrimitiveType.BOOL);
-      case STRING:
+      case "STRING":
         return Decls.newPrimitiveType(Type.PrimitiveType.STRING);
-      case BYTES:
+      case "BYTES":
         return Decls.newPrimitiveType(Type.PrimitiveType.BYTES);
-      case MESSAGE:
-      case GROUP:
-        return Type.newBuilder().setMessageType(kind.getJavaType().name()).build();
+      case "MESSAGE":
+      case "GROUP":
+        return Type.newBuilder().setMessageType(kind.getName()).build();
       default:
         return Type.newBuilder()
             .setPrimitive(Type.PrimitiveType.PRIMITIVE_TYPE_UNSPECIFIED)
@@ -170,15 +173,15 @@ public class DescriptorMappings {
   @Nullable
   static FieldDescriptor getExpectedConstraintDescriptor(
       FieldDescriptor fieldDescriptor, boolean forItems) {
-    if (fieldDescriptor.isMapField()) {
+    if (fieldDescriptor.isMap()) {
       return DescriptorMappings.MAP_FIELD_CONSTRAINTS_DESC;
     } else if (fieldDescriptor.isRepeated() && !forItems) {
       return DescriptorMappings.REPEATED_FIELD_CONSTRAINTS_DESC;
-    } else if (fieldDescriptor.getJavaType() == FieldDescriptor.JavaType.MESSAGE) {
+    } else if (fieldDescriptor.getProto().getType() == FieldDescriptorProto.Type.MESSAGE.INSTANCE) {
       return DescriptorMappings.EXPECTED_WKT_CONSTRAINTS.get(
           fieldDescriptor.getMessageType().getFullName());
     } else {
-      return DescriptorMappings.EXPECTED_STANDARD_CONSTRAINTS.get(fieldDescriptor.getType());
+      return DescriptorMappings.EXPECTED_STANDARD_CONSTRAINTS.get(fieldDescriptor.getProto().getType());
     }
   }
 
@@ -188,7 +191,7 @@ public class DescriptorMappings {
    */
   static Type getCELType(FieldDescriptor fieldDescriptor, boolean forItems) {
     if (!forItems) {
-      if (fieldDescriptor.isMapField()) {
+      if (fieldDescriptor.isMap()) {
         return Decls.newMapType(
             getCELType(fieldDescriptor.getMessageType().findFieldByNumber(1), true),
             getCELType(fieldDescriptor.getMessageType().findFieldByNumber(2), true));
@@ -197,7 +200,7 @@ public class DescriptorMappings {
       }
     }
 
-    if (fieldDescriptor.getType() == FieldDescriptor.Type.MESSAGE) {
+    if (fieldDescriptor.getProto().getType() == FieldDescriptorProto.Type.MESSAGE.INSTANCE) {
       String fqn = fieldDescriptor.getMessageType().getFullName();
       switch (fqn) {
         case "google.protobuf.Any":

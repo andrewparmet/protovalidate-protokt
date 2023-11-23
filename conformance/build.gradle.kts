@@ -87,3 +87,7 @@ dependencies {
 
     errorprone(libs.errorprone)
 }
+
+repositories {
+    mavenLocal()
+}

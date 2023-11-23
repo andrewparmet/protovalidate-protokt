@@ -19,9 +19,6 @@ import build.buf.protovalidate.internal.expression.AstExpression;
 import build.buf.protovalidate.internal.expression.CompiledProgram;
 import build.buf.protovalidate.internal.expression.Expression;
 import build.buf.protovalidate.internal.expression.Variable;
-import build.buf.validate.priv.PrivateProto;
-import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.protobuf.Message;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -37,7 +34,10 @@ import org.projectnessie.cel.ProgramOption;
 import org.projectnessie.cel.checker.Decls;
 import org.projectnessie.cel.common.types.ref.Val;
 import org.projectnessie.cel.interpreter.Activation;
+import protokt.v1.KtMessage;
 import protokt.v1.buf.validate.FieldConstraints;
+import protokt.v1.google.protobuf.FieldDescriptor;
+import protokt.v1.google.protobuf.FieldDescriptorProto;
 
 /** A build-through cache for computed standard constraints. */
 public class ConstraintCache {
@@ -75,9 +75,9 @@ public class ConstraintCache {
    * @throws CompilationException If the constraints fail to compile.
    */
   public List<CompiledProgram> compile(
-      FieldDescriptor fieldDescriptor, FieldConstraints fieldConstraints, boolean forItems)
+          FieldDescriptor fieldDescriptor, FieldConstraints fieldConstraints, boolean forItems)
       throws CompilationException {
-    Message message = resolveConstraints(fieldDescriptor, fieldConstraints, forItems);
+    KtMessage message = resolveConstraints(fieldDescriptor, fieldConstraints, forItems);
     if (message == null) {
       // Message null means there were no constraints resolved.
       return Collections.emptyList();
@@ -141,7 +141,7 @@ public class ConstraintCache {
    * there are no standard constraints to apply to this field.
    */
   @Nullable
-  private Message resolveConstraints(
+  private KtMessage resolveConstraints(
       FieldDescriptor fieldDescriptor, FieldConstraints fieldConstraints, boolean forItems)
       throws CompilationException {
     // Get the oneof field descriptor from the field constraints.
@@ -177,6 +177,6 @@ public class ConstraintCache {
 
     // Return the field from the field constraints identified by the oneof field descriptor, casted
     // as a Message.
-    return (Message) fieldConstraints.getField(oneofFieldDescriptor);
+    return (KtMessage) fieldConstraints.getField(oneofFieldDescriptor);
   }
 }

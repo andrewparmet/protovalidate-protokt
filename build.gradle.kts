@@ -4,6 +4,23 @@ import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.SonatypeHost
 import net.ltgt.gradle.errorprone.CheckSeverity
 import net.ltgt.gradle.errorprone.errorprone
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+buildscript {
+    repositories {
+        mavenLocal()
+    }
+
+    dependencies {
+        classpath(libs.maven.plugin)
+        classpath(libs.spotless)
+        classpath("com.toasttab.protokt:protokt-gradle-plugin:1.0.0-alpha.11-SNAPSHOT")
+    }
+}
+
+repositories {
+    mavenLocal()
+}
 
 plugins {
     `java-library`
@@ -11,10 +28,11 @@ plugins {
     alias(libs.plugins.git)
     alias(libs.plugins.maven)
     id("org.jetbrains.kotlin.jvm") version "1.9.20"
-    id("com.toasttab.protokt") version "1.0.0-alpha.10"
 }
 
+apply(plugin = "com.toasttab.protokt")
 
+kotlin.compilerOptions.jvmTarget.set(JvmTarget.JVM_1_8)
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -166,13 +184,6 @@ tasks.withType<GenerateModuleMetadata> {
     suppressedValidationErrors.add("enforced-platform")
 }
 
-buildscript {
-    dependencies {
-        classpath(libs.maven.plugin)
-        classpath(libs.spotless)
-    }
-}
-
 sourceSets {
     test {
         java {
@@ -287,5 +298,5 @@ dependencies {
 
     errorprone(libs.errorprone)
 
-    protobuf("build.buf:protovalidate:0.1.5")
+    "protobuf"("build.buf:protovalidate:0.1.5")
 }

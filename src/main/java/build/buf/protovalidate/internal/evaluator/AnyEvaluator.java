@@ -16,10 +16,10 @@ package build.buf.protovalidate.internal.evaluator;
 
 import build.buf.protovalidate.ValidationResult;
 import build.buf.protovalidate.exceptions.ExecutionException;
-import com.google.protobuf.Descriptors;
 import kotlin.Unit;
 import protokt.v1.KtMessage;
 import protokt.v1.buf.validate.Violation;
+import protokt.v1.google.protobuf.FieldDescriptor;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,12 +34,12 @@ import java.util.Set;
  * runtime.
  */
 class AnyEvaluator implements Evaluator {
-  private final Descriptors.FieldDescriptor typeURLDescriptor;
+  private final FieldDescriptor typeURLDescriptor;
   private final Set<String> in;
   private final Set<String> notIn;
 
   /** Constructs a new evaluator for {@link protokt.v1.buf.validate.AnyRules} messages. */
-  AnyEvaluator(Descriptors.FieldDescriptor typeURLDescriptor, List<String> in, List<String> notIn) {
+  AnyEvaluator(FieldDescriptor typeURLDescriptor, List<String> in, List<String> notIn) {
     this.typeURLDescriptor = typeURLDescriptor;
     this.in = stringsToSet(in);
     this.notIn = stringsToSet(notIn);

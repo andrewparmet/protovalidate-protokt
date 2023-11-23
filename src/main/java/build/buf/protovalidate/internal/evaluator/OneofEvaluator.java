@@ -16,10 +16,10 @@ package build.buf.protovalidate.internal.evaluator;
 
 import build.buf.protovalidate.ValidationResult;
 import build.buf.protovalidate.exceptions.ExecutionException;
-import com.google.protobuf.Descriptors.OneofDescriptor;
-import com.google.protobuf.Message;
 import kotlin.Unit;
+import protokt.v1.KtMessage;
 import protokt.v1.buf.validate.Violation;
+import protokt.v1.google.protobuf.OneofDescriptor;
 
 import java.util.Collections;
 
@@ -49,7 +49,7 @@ public class OneofEvaluator implements Evaluator {
 
   @Override
   public ValidationResult evaluate(Value val, boolean failFast) throws ExecutionException {
-    Message message = val.messageValue();
+    KtMessage message = val.messageValue();
     if (message == null) {
       return ValidationResult.EMPTY;
     }

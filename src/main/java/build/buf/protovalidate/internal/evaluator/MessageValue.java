@@ -14,7 +14,6 @@
 
 package build.buf.protovalidate.internal.evaluator;
 
-import com.google.protobuf.Message;
 import protokt.v1.KtMessage;
 
 import java.util.Collections;
@@ -35,7 +34,7 @@ public final class MessageValue implements Value {
    *
    * @param value The message value.
    */
-  public MessageValue(Message value) {
+  public MessageValue(KtMessage value) {
     this.value = value;
   }
 
