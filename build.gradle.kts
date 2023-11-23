@@ -278,7 +278,7 @@ dependencies {
     implementation(libs.guava)
     implementation(libs.ipaddress)
     implementation(libs.jakarta.mail.api)
-    implementation("io.github.classgraph:classgraph:4.8.153")
+    implementation("io.github.classgraph:classgraph:4.8.165")
     implementation(kotlin("reflect"))
 
     testImplementation(libs.assertj)
