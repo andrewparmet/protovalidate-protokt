@@ -16,11 +16,10 @@ package build.buf.protovalidate.internal.evaluator;
 
 import build.buf.protovalidate.ValidationResult;
 import build.buf.protovalidate.exceptions.ExecutionException;
-import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.protobuf.Message;
 import kotlin.Unit;
 import protokt.v1.KtMessage;
 import protokt.v1.buf.validate.Violation;
+import protokt.v1.google.protobuf.FieldDescriptor;
 
 import java.util.Collections;
 import java.util.List;

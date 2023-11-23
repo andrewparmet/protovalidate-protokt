@@ -47,7 +47,6 @@ import protokt.v1.google.protobuf.EnumDescriptor;
 import protokt.v1.google.protobuf.FieldDescriptor;
 import protokt.v1.google.protobuf.FieldDescriptorProto;
 import protokt.v1.google.protobuf.OneofDescriptor;
-import protokt.v1.google.protobuf.OneofDescriptorProto;
 
 /** A build-through cache of message evaluators keyed off the provided descriptor. */
 public class EvaluatorBuilder {
@@ -441,7 +440,7 @@ public class EvaluatorBuilder {
       }
       MapEvaluator mapEval = new MapEvaluator(fieldConstraints, fieldDescriptor);
       buildValue(
-          fieldDescriptor.getMessage().findFieldByNumber(1),
+          fieldDescriptor.getMessageType().findFieldByNumber(1),
           ((FieldConstraints.Type.Map) fieldConstraints.getType()).getMap().getKeys(),
           true,
           mapEval.getKeyEvaluator());
@@ -459,7 +458,7 @@ public class EvaluatorBuilder {
         boolean forItems,
         ValueEvaluator valueEvaluatorEval)
         throws CompilationException {
-      if (fieldDescriptor.isMapField() || !fieldDescriptor.isRepeated() || forItems) {
+      if (fieldDescriptor.isMap() || !fieldDescriptor.isRepeated() || forItems) {
         return;
       }
       ListEvaluator listEval = new ListEvaluator();

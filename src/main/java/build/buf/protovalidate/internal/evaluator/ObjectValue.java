@@ -94,15 +94,15 @@ public final class ObjectValue implements Value {
 
   @Override
   public Map<Value, Value> mapValue() {
-    List<AbstractMessage> input =
+    List<KtMessage> input =
         value instanceof List
-            ? (List<AbstractMessage>) value
-            : Collections.singletonList((AbstractMessage) value);
+            ? (List<KtMessage>) value
+            : Collections.singletonList((KtMessage) value);
 
     Descriptors.FieldDescriptor keyDesc = fieldDescriptor.getMessageType().findFieldByNumber(1);
     Descriptors.FieldDescriptor valDesc = fieldDescriptor.getMessageType().findFieldByNumber(2);
     Map<Value, Value> out = new HashMap<>(input.size());
-    for (AbstractMessage entry : input) {
+    for (KtMessage entry : input) {
       Object keyValue = entry.getField(keyDesc);
       Value keyJavaValue =
           new build.buf.protovalidate.internal.evaluator.ObjectValue(keyDesc, keyValue);
