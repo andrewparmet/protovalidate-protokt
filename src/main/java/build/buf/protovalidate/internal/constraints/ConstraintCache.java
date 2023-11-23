@@ -84,6 +84,7 @@ public class ConstraintCache {
     }
     Env finalEnv =
         env.extend(
+                // todo: implement protokt type registry
             EnvOption.types(message.getDefaultInstanceForType()),
             EnvOption.declarations(
                 Decls.newVar(
@@ -97,7 +98,7 @@ public class ConstraintCache {
       FieldDescriptor constraintFieldDesc = entry.getKey();
       if (!descriptorMap.containsKey(constraintFieldDesc)) {
         protokt.v1.buf.validate.priv.FieldConstraints constraints =
-            constraintFieldDesc.getOptions().getExtension(PrivateProto.field);
+            constraintFieldDesc.getProto().getOptions().getExtension(PrivateProto.field);
         List<Expression> expressions = Expression.fromPrivConstraints(constraints.getCel());
         List<AstExpression> astExpressions = new ArrayList<>();
         for (Expression expression : expressions) {
