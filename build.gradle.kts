@@ -27,7 +27,7 @@ plugins {
     alias(libs.plugins.errorprone)
     alias(libs.plugins.git)
     alias(libs.plugins.maven)
-    id("org.jetbrains.kotlin.jvm") version "1.9.20"
+    id("org.jetbrains.kotlin.jvm") version "1.9.21"
 }
 
 apply(plugin = "com.toasttab.protokt")
