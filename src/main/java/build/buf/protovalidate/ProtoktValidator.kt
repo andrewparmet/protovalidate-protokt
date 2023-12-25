@@ -27,7 +27,6 @@ class ProtoktValidator(
     private val failFast = config.isFailFast
 
     private val evaluatorsByFullTypeName = ConcurrentHashMap<String, Evaluator>()
-    private val descriptorsByFullTypeName = ConcurrentHashMap<String, Descriptor>()
 
     fun load(descriptor: FileDescriptor) {
         descriptor
@@ -35,7 +34,6 @@ class ProtoktValidator(
             .messageTypes
             .forEach {
                 evaluatorsByFullTypeName[it.fullName] = evaluatorBuilder.load(it)
-                descriptorsByFullTypeName[it.fullName] = it
             }
     }
 
@@ -49,8 +47,5 @@ class ProtoktValidator(
     fun validate(message: KtMessage): ValidationResult =
         evaluatorsByFullTypeName.getValue(
             message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName
-        ).evaluate(
-            ProtoktMessageValue(message, descriptorsByFullTypeName),
-            failFast
-        )
+        ).evaluate(ProtoktMessageValue(message), failFast)
 }

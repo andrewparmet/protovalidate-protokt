@@ -1,12 +1,17 @@
 package build.buf.protovalidate.internal.evaluator
 
-import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.Descriptors.FieldDescriptor
 import com.google.protobuf.Descriptors.FieldDescriptor.Type
 import com.google.protobuf.Descriptors.OneofDescriptor
 import com.google.protobuf.Message
 import org.projectnessie.cel.common.ULong
+import protokt.v1.KtEnum
 import protokt.v1.KtMessage
+import protokt.v1.KtProperty
+import kotlin.reflect.KProperty1
+import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.isSubclassOf
 
 interface MessageLike {
     fun newObjectValue(fieldDescriptor: FieldDescriptor, fieldValue: Any): Value
@@ -15,9 +20,9 @@ interface MessageLike {
 
     fun hasField(field: FieldDescriptor): Boolean
 
-    fun getField(field: FieldDescriptor): Any
+    fun hasField(oneof: OneofDescriptor): Boolean
 
-    fun getOneofFieldDescriptor(oneof: OneofDescriptor): FieldDescriptor?
+    fun getField(field: FieldDescriptor): Any
 }
 
 class ProtobufMessageLike(
@@ -32,42 +37,57 @@ class ProtobufMessageLike(
     override fun hasField(field: FieldDescriptor) =
         message.hasField(field)
 
+    override fun hasField(oneof: OneofDescriptor) =
+        message.getOneofFieldDescriptor(oneof) != null
+
     override fun getField(field: FieldDescriptor) =
         message.getField(field)
-
-    override fun getOneofFieldDescriptor(oneof: OneofDescriptor) =
-        message.getOneofFieldDescriptor(oneof)
 }
 
 class ProtoktMessageLike(
-    val message: KtMessage,
-    private val descriptorsByFullTypeName: Map<String, Descriptor>
+    val message: KtMessage
 ) : MessageLike {
     override fun newObjectValue(fieldDescriptor: FieldDescriptor, fieldValue: Any) =
-        ProtoktObjectValue(fieldDescriptor, fieldValue, descriptorsByFullTypeName)
+        ProtoktObjectValue(fieldDescriptor, fieldValue)
 
-    override fun getRepeatedFieldCount(field: FieldDescriptor): Int {
-        TODO("Not yet implemented")
+    override fun getRepeatedFieldCount(field: FieldDescriptor) =
+        getTopLevelFieldGetter<Collection<*>>(field).get(message).size
+
+    override fun hasField(field: FieldDescriptor) =
+        getTopLevelFieldGetter<Any?>(field).get(message) != null
+
+    override fun hasField(oneof: OneofDescriptor): Boolean {
+        val fieldNumbers = oneof.fields.map { it.number }.toSet()
+
+        return message::class
+            .nestedClasses
+            .filter { it.isSealed && !it.isSubclassOf(KtEnum::class) }
+            .flatMap { it.nestedClasses }
+            .let { getTopLevelFieldGetters<Any?> { it in fieldNumbers } }
+            .mapNotNull { it.get(message) }
+            .any()
     }
 
-    override fun hasField(field: FieldDescriptor): Boolean {
-        TODO("Not yet implemented")
-    }
+    override fun getField(field: FieldDescriptor) =
+        getTopLevelFieldGetter<Any>(field).get(message)
 
-    override fun getField(field: FieldDescriptor): Any {
-        TODO("Not yet implemented")
-    }
+    private fun <T> getTopLevelFieldGetter(fieldDescriptor: FieldDescriptor): KProperty1<KtMessage, T> =
+        getTopLevelFieldGetters<T> { it == fieldDescriptor.number }.single()
 
-    override fun getOneofFieldDescriptor(oneof: OneofDescriptor): FieldDescriptor? {
-        TODO("Not yet implemented")
-    }
+    private fun <T> getTopLevelFieldGetters(condition: (Int) -> Boolean): List<KProperty1<KtMessage, T>> =
+        message::class
+            .declaredMemberProperties
+            .filter { condition(it.findAnnotation<KtProperty>()!!.number) }
+            .map {
+                @Suppress("UNCHECKED_CAST")
+                it as KProperty1<KtMessage, T>
+            }
 }
 
 class ProtoktMessageValue(
-    message: KtMessage,
-    descriptorsByFullTypeName: Map<String, Descriptor>
+    message: KtMessage
 ) : Value {
-    private val message = ProtoktMessageLike(message, descriptorsByFullTypeName)
+    private val message = ProtoktMessageLike(message)
 
     override fun messageValue() =
         message
@@ -84,12 +104,11 @@ class ProtoktMessageValue(
 
 class ProtoktObjectValue(
     private val fieldDescriptor: FieldDescriptor,
-    private val value: Any,
-    private val descriptorsByFullTypeName: Map<String, Descriptor>
+    private val value: Any
 ) : Value {
     override fun messageValue() =
         if (fieldDescriptor.type == Type.MESSAGE) {
-            ProtoktMessageLike(value as KtMessage, descriptorsByFullTypeName)
+            ProtoktMessageLike(value as KtMessage)
         } else {
             null
         }
@@ -109,7 +128,7 @@ class ProtoktObjectValue(
 
     override fun repeatedValue() =
         if (fieldDescriptor.isRepeated) {
-            (value as List<*>).map { ProtoktObjectValue(fieldDescriptor, it!!, descriptorsByFullTypeName) }
+            (value as List<*>).map { ProtoktObjectValue(fieldDescriptor, it!!) }
         } else {
             emptyList<Value>()
         }
@@ -122,11 +141,11 @@ class ProtoktObjectValue(
         val valDesc = fieldDescriptor.messageType.findFieldByNumber(2)
 
         return input.associate {
-            val keyValue = ProtoktMessageLike(it, descriptorsByFullTypeName).getField(keyDesc)
-            val keyProtoktValue = ProtoktObjectValue(keyDesc, keyValue, descriptorsByFullTypeName)
+            val keyValue = ProtoktMessageLike(it).getField(keyDesc)
+            val keyProtoktValue = ProtoktObjectValue(keyDesc, keyValue)
 
-            val valValue = ProtoktMessageLike(it, descriptorsByFullTypeName).getField(valDesc)
-            val valProtoktValue = ProtoktObjectValue(valDesc, valValue, descriptorsByFullTypeName)
+            val valValue = ProtoktMessageLike(it).getField(valDesc)
+            val valProtoktValue = ProtoktObjectValue(valDesc, valValue)
 
             keyProtoktValue to valProtoktValue
         }
