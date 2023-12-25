@@ -3,10 +3,10 @@ package build.buf.protovalidate
 import build.buf.protovalidate.internal.celext.ValidateLibrary
 import build.buf.protovalidate.internal.evaluator.Evaluator
 import build.buf.protovalidate.internal.evaluator.EvaluatorBuilder
-import build.buf.protovalidate.internal.evaluator.ProtoktMessageLike
 import build.buf.protovalidate.internal.evaluator.ProtoktMessageValue
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.Descriptors
+import com.google.protobuf.Descriptors.Descriptor
 import org.projectnessie.cel.Env
 import org.projectnessie.cel.Library
 import protokt.v1.KtGeneratedMessage
@@ -26,14 +26,16 @@ class ProtoktValidator(
 
     private val failFast = config.isFailFast
 
-    private val evaluatorsByTypeUrl = ConcurrentHashMap<String, Evaluator>()
+    private val evaluatorsByFullTypeName = ConcurrentHashMap<String, Evaluator>()
+    private val descriptorsByFullTypeName = ConcurrentHashMap<String, Descriptor>()
 
     fun load(descriptor: FileDescriptor) {
         descriptor
             .toProtobufJavaDescriptor()
             .messageTypes
             .forEach {
-                evaluatorsByTypeUrl[it.fullName] = evaluatorBuilder.load(it)
+                evaluatorsByFullTypeName[it.fullName] = evaluatorBuilder.load(it)
+                descriptorsByFullTypeName[it.fullName] = it
             }
     }
 
@@ -45,7 +47,10 @@ class ProtoktValidator(
         )
 
     fun validate(message: KtMessage): ValidationResult =
-        evaluatorsByTypeUrl.getValue(
+        evaluatorsByFullTypeName.getValue(
             message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName
-        ).evaluate(ProtoktMessageValue(message), failFast)
+        ).evaluate(
+            ProtoktMessageValue(message, descriptorsByFullTypeName),
+            failFast
+        )
 }

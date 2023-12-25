@@ -1,5 +1,6 @@
 package build.buf.protovalidate.internal.evaluator
 
+import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.Descriptors.FieldDescriptor
 import com.google.protobuf.Descriptors.FieldDescriptor.Type
 import com.google.protobuf.Descriptors.OneofDescriptor
@@ -39,10 +40,11 @@ class ProtobufMessageLike(
 }
 
 class ProtoktMessageLike(
-    val message: KtMessage
+    val message: KtMessage,
+    private val descriptorsByFullTypeName: Map<String, Descriptor>
 ) : MessageLike {
     override fun newObjectValue(fieldDescriptor: FieldDescriptor, fieldValue: Any) =
-        ProtoktObjectValue(fieldDescriptor, fieldValue)
+        ProtoktObjectValue(fieldDescriptor, fieldValue, descriptorsByFullTypeName)
 
     override fun getRepeatedFieldCount(field: FieldDescriptor): Int {
         TODO("Not yet implemented")
@@ -62,9 +64,10 @@ class ProtoktMessageLike(
 }
 
 class ProtoktMessageValue(
-    message: KtMessage
+    message: KtMessage,
+    descriptorsByFullTypeName: Map<String, Descriptor>
 ) : Value {
-    private val message = ProtoktMessageLike(message)
+    private val message = ProtoktMessageLike(message, descriptorsByFullTypeName)
 
     override fun messageValue() =
         message
@@ -81,11 +84,12 @@ class ProtoktMessageValue(
 
 class ProtoktObjectValue(
     private val fieldDescriptor: FieldDescriptor,
-    private val value: Any
+    private val value: Any,
+    private val descriptorsByFullTypeName: Map<String, Descriptor>
 ) : Value {
     override fun messageValue() =
         if (fieldDescriptor.type == Type.MESSAGE) {
-            ProtoktMessageLike(value as KtMessage)
+            ProtoktMessageLike(value as KtMessage, descriptorsByFullTypeName)
         } else {
             null
         }
@@ -105,7 +109,7 @@ class ProtoktObjectValue(
 
     override fun repeatedValue() =
         if (fieldDescriptor.isRepeated) {
-            (value as List<*>).map { ProtoktObjectValue(fieldDescriptor, it!!) }
+            (value as List<*>).map { ProtoktObjectValue(fieldDescriptor, it!!, descriptorsByFullTypeName) }
         } else {
             emptyList<Value>()
         }
@@ -118,11 +122,11 @@ class ProtoktObjectValue(
         val valDesc = fieldDescriptor.messageType.findFieldByNumber(2)
 
         return input.associate {
-            val keyValue = ProtoktMessageLike(it).getField(keyDesc)
-            val keyProtoktValue = ProtoktObjectValue(keyDesc, keyValue)
+            val keyValue = ProtoktMessageLike(it, descriptorsByFullTypeName).getField(keyDesc)
+            val keyProtoktValue = ProtoktObjectValue(keyDesc, keyValue, descriptorsByFullTypeName)
 
-            val valValue = ProtoktMessageLike(it).getField(valDesc)
-            val valProtoktValue = ProtoktObjectValue(valDesc, valValue)
+            val valValue = ProtoktMessageLike(it, descriptorsByFullTypeName).getField(valDesc)
+            val valProtoktValue = ProtoktObjectValue(valDesc, valValue, descriptorsByFullTypeName)
 
             keyProtoktValue to valProtoktValue
         }
