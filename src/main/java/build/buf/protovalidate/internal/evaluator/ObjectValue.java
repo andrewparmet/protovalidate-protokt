@@ -16,7 +16,7 @@ package build.buf.protovalidate.internal.evaluator;
 
 import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.Descriptors;
-import com.google.protobuf.Message;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,7 +40,7 @@ public final class ObjectValue implements Value {
   private final Object value;
 
   /**
-   * Constructs a new {@link build.buf.protovalidate.internal.evaluator.ObjectValue}.
+   * Constructs a new {@link ObjectValue}.
    *
    * @param fieldDescriptor The field descriptor for the value.
    * @param value The value associated with the field descriptor.
@@ -52,9 +52,9 @@ public final class ObjectValue implements Value {
 
   @Nullable
   @Override
-  public Message messageValue() {
+  public ProtobufMessage messageValue() {
     if (fieldDescriptor.getType() == Descriptors.FieldDescriptor.Type.MESSAGE) {
-      return (Message) value;
+      return (ProtobufMessage) value;
     }
     return null;
   }
@@ -85,7 +85,7 @@ public final class ObjectValue implements Value {
     if (fieldDescriptor.isRepeated()) {
       List<?> list = (List<?>) value;
       for (Object o : list) {
-        out.add(new build.buf.protovalidate.internal.evaluator.ObjectValue(fieldDescriptor, o));
+        out.add(new ObjectValue(fieldDescriptor, o));
       }
     }
     return out;
@@ -104,11 +104,11 @@ public final class ObjectValue implements Value {
     for (AbstractMessage entry : input) {
       Object keyValue = entry.getField(keyDesc);
       Value keyJavaValue =
-          new build.buf.protovalidate.internal.evaluator.ObjectValue(keyDesc, keyValue);
+          new ObjectValue(keyDesc, keyValue);
 
       Object valValue = entry.getField(valDesc);
       Value valJavaValue =
-          new build.buf.protovalidate.internal.evaluator.ObjectValue(valDesc, valValue);
+          new ObjectValue(valDesc, valValue);
 
       out.put(keyJavaValue, valJavaValue);
     }

@@ -4,12 +4,26 @@ import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.SonatypeHost
 import net.ltgt.gradle.errorprone.CheckSeverity
 import net.ltgt.gradle.errorprone.errorprone
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     `java-library`
     alias(libs.plugins.errorprone)
     alias(libs.plugins.git)
     alias(libs.plugins.maven)
+    id("org.jetbrains.kotlin.jvm") version "1.9.20"
+}
+
+repositories {
+    mavenLocal()
+}
+
+apply(plugin = "com.toasttab.protokt")
+
+kotlin {
+    compilerOptions {
+        target { jvmTarget = JvmTarget.JVM_1_8 }
+    }
 }
 
 java {
@@ -163,9 +177,14 @@ tasks.withType<GenerateModuleMetadata> {
 }
 
 buildscript {
+    repositories {
+        mavenLocal()
+    }
+
     dependencies {
         classpath(libs.maven.plugin)
         classpath(libs.spotless)
+        classpath("com.toasttab.protokt:protokt-gradle-plugin:1.0.0-beta.1-SNAPSHOT")
     }
 }
 
@@ -274,6 +293,8 @@ dependencies {
     implementation(libs.guava)
     implementation(libs.ipaddress)
     implementation(libs.jakarta.mail.api)
+    implementation("io.github.classgraph:classgraph:4.8.153")
+    implementation(kotlin("reflect"))
 
     testImplementation(libs.assertj)
     testImplementation(platform(libs.junit.bom))

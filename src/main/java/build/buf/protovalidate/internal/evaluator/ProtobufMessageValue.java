@@ -23,23 +23,23 @@ import java.util.Map;
  * The {@link build.buf.protovalidate.internal.evaluator.Value} type that contains a {@link
  * com.google.protobuf.Message}.
  */
-public final class MessageValue implements Value {
+public final class ProtobufMessageValue implements Value {
 
   /** Object type since the object type is inferred from the field descriptor. */
   private final Object value;
 
   /**
-   * Constructs a {@link MessageValue} with the provided message value.
+   * Constructs a {@link ProtobufMessageValue} with the provided message value.
    *
    * @param value The message value.
    */
-  public MessageValue(Message value) {
+  public ProtobufMessageValue(Message value) {
     this.value = value;
   }
 
   @Override
-  public Message messageValue() {
-    return (Message) value;
+  public ProtobufMessage messageValue() {
+    return (ProtobufMessage) value;
   }
 
   @Override

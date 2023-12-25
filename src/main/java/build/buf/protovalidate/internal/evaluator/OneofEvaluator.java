@@ -47,7 +47,7 @@ public class OneofEvaluator implements Evaluator {
 
   @Override
   public ValidationResult evaluate(Value val, boolean failFast) throws ExecutionException {
-    Message message = val.messageValue();
+    MessageLike message = val.messageValue();
     if (message == null) {
       return ValidationResult.EMPTY;
     }

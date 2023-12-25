@@ -45,7 +45,7 @@ class AnyEvaluator implements Evaluator {
 
   @Override
   public ValidationResult evaluate(Value val, boolean failFast) throws ExecutionException {
-    Message anyValue = val.messageValue();
+    MessageLike anyValue = val.messageValue();
     if (anyValue == null) {
       return ValidationResult.EMPTY;
     }

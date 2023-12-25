@@ -31,7 +31,7 @@ public interface Value {
    *     Message} type.
    */
   @Nullable
-  Message messageValue();
+  MessageLike messageValue();
 
   /**
    * Get the underlying value and cast it to the class type.

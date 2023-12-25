@@ -9,6 +9,10 @@ plugins {
     alias(libs.plugins.errorprone)
 }
 
+repositories {
+    mavenLocal()
+}
+
 val conformanceCLIFile = project.layout.buildDirectory.file("gobin/protovalidate-conformance").get().asFile
 val conformanceCLIPath: String = conformanceCLIFile.absolutePath
 val conformanceAppScript: String = project.layout.buildDirectory.file("install/conformance/bin/conformance").get().asFile.absolutePath
