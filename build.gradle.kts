@@ -298,5 +298,5 @@ dependencies {
 
     errorprone(libs.errorprone)
 
-    "protobuf"("build.buf:protovalidate:0.1.5")
+    "protobuf"("build.buf:protovalidate:0.1.9")
 }
