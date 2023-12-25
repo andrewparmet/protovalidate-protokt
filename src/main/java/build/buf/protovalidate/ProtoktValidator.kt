@@ -6,7 +6,6 @@ import build.buf.protovalidate.internal.evaluator.EvaluatorBuilder
 import build.buf.protovalidate.internal.evaluator.ProtoktMessageValue
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.Descriptors
-import com.google.protobuf.Descriptors.Descriptor
 import org.projectnessie.cel.Env
 import org.projectnessie.cel.Library
 import protokt.v1.KtGeneratedMessage

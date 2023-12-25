@@ -18,8 +18,6 @@ repositories {
     mavenLocal()
 }
 
-apply(plugin = "com.toasttab.protokt")
-
 kotlin {
     compilerOptions {
         target { jvmTarget = JvmTarget.JVM_1_8 }
@@ -293,8 +291,8 @@ dependencies {
     implementation(libs.guava)
     implementation(libs.ipaddress)
     implementation(libs.jakarta.mail.api)
-    implementation("io.github.classgraph:classgraph:4.8.153")
     implementation(kotlin("reflect"))
+    implementation("com.toasttab.protokt:protokt-core:1.0.0-beta.1-SNAPSHOT")
 
     testImplementation(libs.assertj)
     testImplementation(platform(libs.junit.bom))

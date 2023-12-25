@@ -14,11 +14,8 @@
 
 package build.buf.protovalidate.conformance;
 
-import build.buf.protovalidate.Config;
+import build.buf.protovalidate.ProtoktValidator;
 import build.buf.protovalidate.ValidationResult;
-import build.buf.protovalidate.Validator;
-import build.buf.protovalidate.exceptions.CompilationException;
-import build.buf.protovalidate.exceptions.ExecutionException;
 import build.buf.validate.ValidateProto;
 import build.buf.validate.Violation;
 import build.buf.validate.Violations;
@@ -30,9 +27,8 @@ import com.google.errorprone.annotations.FormatMethod;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
-import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.ExtensionRegistry;
-import com.google.protobuf.InvalidProtocolBufferException;
+import protokt.v1.KtMessage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +53,7 @@ public class Main {
     try {
       Map<String, Descriptors.Descriptor> descriptorMap =
           FileDescriptorUtil.parse(request.getFdset());
-      Validator validator = new Validator(Config.newBuilder().build());
+      ProtoktValidator validator = new ProtoktValidator();
       TestConformanceResponse.Builder responseBuilder = TestConformanceResponse.newBuilder();
       Map<String, TestResult> resultsMap = new HashMap<>();
       for (Map.Entry<String, Any> entry : request.getCasesMap().entrySet()) {
@@ -72,8 +68,7 @@ public class Main {
   }
 
   static TestResult testCase(
-      Validator validator, Map<String, Descriptors.Descriptor> fileDescriptors, Any testCase)
-      throws InvalidProtocolBufferException {
+          ProtoktValidator validator, Map<String, Descriptors.Descriptor> fileDescriptors, Any testCase) {
     List<String> urlParts = Splitter.on('/').limit(2).splitToList(testCase.getTypeUrl());
     String fullName = urlParts.get(urlParts.size() - 1);
     Descriptors.Descriptor descriptor = fileDescriptors.get(fullName);
@@ -81,24 +76,19 @@ public class Main {
       return unexpectedErrorResult("Unable to find descriptor: %s", fullName);
     }
     ByteString testCaseValue = testCase.getValue();
-    DynamicMessage dynamicMessage =
-        DynamicMessage.newBuilder(descriptor).mergeFrom(testCaseValue).build();
-    return validate(validator, dynamicMessage);
+    KtMessage message = DynamicConcreteKtMessageDeserializer.parse(fullName, testCaseValue.newInput());
+    return validate(validator, message);
   }
 
-  private static TestResult validate(Validator validator, DynamicMessage dynamicMessage) {
+  private static TestResult validate(ProtoktValidator validator, KtMessage message) {
     try {
-      ValidationResult result = validator.validate(dynamicMessage);
+      ValidationResult result = validator.validate(message);
       List<Violation> violations = result.getViolations();
       if (violations.isEmpty()) {
         return TestResult.newBuilder().setSuccess(true).build();
       }
       Violations error = Violations.newBuilder().addAllViolations(violations).build();
       return TestResult.newBuilder().setValidationError(error).build();
-    } catch (CompilationException e) {
-      return TestResult.newBuilder().setCompilationError(e.getMessage()).build();
-    } catch (ExecutionException e) {
-      return TestResult.newBuilder().setRuntimeError(e.getMessage()).build();
     } catch (Exception e) {
       return unexpectedErrorResult("unknown error: %s", e.toString());
     }

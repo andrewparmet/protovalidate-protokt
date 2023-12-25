@@ -1,5 +1,7 @@
+import com.diffplug.gradle.spotless.ProtobufExtension
 import com.diffplug.gradle.spotless.SpotlessExtension
 import net.ltgt.gradle.errorprone.errorprone
+import protokt.v1.gradle.ProtoktExtension
 
 plugins {
     `version-catalog`
@@ -7,6 +9,13 @@ plugins {
     application
     java
     alias(libs.plugins.errorprone)
+    id("org.jetbrains.kotlin.jvm") version "1.9.20"
+}
+
+apply(plugin = "com.toasttab.protokt")
+
+configure<ProtoktExtension> {
+    formatOutput = false
 }
 
 repositories {
@@ -84,10 +93,14 @@ dependencies {
     implementation(project(":"))
     implementation(libs.guava)
     implementation(libs.protobuf.java)
+    implementation("io.github.classgraph:classgraph:4.8.153")
+    implementation(kotlin("reflect"))
 
     implementation(libs.assertj)
     implementation(platform(libs.junit.bom))
     testImplementation("org.junit.jupiter:junit-jupiter")
 
     errorprone(libs.errorprone)
+
+    "protobuf"(rootProject.files("src/main/resources"))
 }
