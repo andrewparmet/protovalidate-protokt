@@ -18,7 +18,6 @@ import build.buf.protovalidate.ValidationResult;
 import build.buf.protovalidate.exceptions.ExecutionException;
 import build.buf.validate.Violation;
 import com.google.protobuf.Descriptors;
-import com.google.protobuf.Message;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;

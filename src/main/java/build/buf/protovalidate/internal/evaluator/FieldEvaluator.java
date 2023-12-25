@@ -18,7 +18,6 @@ import build.buf.protovalidate.ValidationResult;
 import build.buf.protovalidate.exceptions.ExecutionException;
 import build.buf.validate.Violation;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.protobuf.Message;
 import java.util.Collections;
 import java.util.List;
 
@@ -82,7 +81,7 @@ class FieldEvaluator implements Evaluator {
     }
     Object fieldValue = message.getField(descriptor);
     ValidationResult evalResult =
-        valueEvaluator.evaluate(new ObjectValue(descriptor, fieldValue), failFast);
+        valueEvaluator.evaluate(message.newObjectValue(descriptor, fieldValue), failFast);
     List<Violation> violations =
         ErrorPathUtils.prefixErrorPaths(evalResult.getViolations(), "%s", descriptor.getName());
     return new ValidationResult(violations);

@@ -16,22 +16,20 @@ package build.buf.protovalidate.internal.evaluator;
 
 import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.Descriptors;
-
+import com.google.protobuf.Message;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
-
-import com.google.protobuf.Message;
 import org.projectnessie.cel.common.ULong;
 
 /**
  * The {@link build.buf.protovalidate.internal.evaluator.Value} type that contains a field
  * descriptor and its value.
  */
-public final class ObjectValue implements Value {
+public final class ProtobufObjectValue implements Value {
 
   /**
    * {@link com.google.protobuf.Descriptors.FieldDescriptor} is the field descriptor for the value.
@@ -42,12 +40,12 @@ public final class ObjectValue implements Value {
   private final Object value;
 
   /**
-   * Constructs a new {@link ObjectValue}.
+   * Constructs a new {@link ProtobufObjectValue}.
    *
    * @param fieldDescriptor The field descriptor for the value.
    * @param value The value associated with the field descriptor.
    */
-  ObjectValue(Descriptors.FieldDescriptor fieldDescriptor, Object value) {
+  ProtobufObjectValue(Descriptors.FieldDescriptor fieldDescriptor, Object value) {
     this.fieldDescriptor = fieldDescriptor;
     this.value = value;
   }
@@ -87,7 +85,7 @@ public final class ObjectValue implements Value {
     if (fieldDescriptor.isRepeated()) {
       List<?> list = (List<?>) value;
       for (Object o : list) {
-        out.add(new ObjectValue(fieldDescriptor, o));
+        out.add(new ProtobufObjectValue(fieldDescriptor, o));
       }
     }
     return out;
@@ -95,22 +93,21 @@ public final class ObjectValue implements Value {
 
   @Override
   public Map<Value, Value> mapValue() {
-    List<AbstractMessage> input =
+    @SuppressWarnings("unchecked")
+    List<Message> input =
         value instanceof List
-            ? (List<AbstractMessage>) value
+            ? (List<Message>) value
             : Collections.singletonList((AbstractMessage) value);
 
     Descriptors.FieldDescriptor keyDesc = fieldDescriptor.getMessageType().findFieldByNumber(1);
     Descriptors.FieldDescriptor valDesc = fieldDescriptor.getMessageType().findFieldByNumber(2);
     Map<Value, Value> out = new HashMap<>(input.size());
-    for (AbstractMessage entry : input) {
+    for (Message entry : input) {
       Object keyValue = entry.getField(keyDesc);
-      Value keyJavaValue =
-          new ObjectValue(keyDesc, keyValue);
+      Value keyJavaValue = new ProtobufObjectValue(keyDesc, keyValue);
 
       Object valValue = entry.getField(valDesc);
-      Value valJavaValue =
-          new ObjectValue(valDesc, valValue);
+      Value valJavaValue = new ProtobufObjectValue(valDesc, valValue);
 
       out.put(keyJavaValue, valJavaValue);
     }

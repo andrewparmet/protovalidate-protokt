@@ -3,6 +3,7 @@ package build.buf.protovalidate
 import build.buf.protovalidate.internal.celext.ValidateLibrary
 import build.buf.protovalidate.internal.evaluator.Evaluator
 import build.buf.protovalidate.internal.evaluator.EvaluatorBuilder
+import build.buf.protovalidate.internal.evaluator.ProtoktMessageLike
 import build.buf.protovalidate.internal.evaluator.ProtoktMessageValue
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.Descriptors

@@ -18,7 +18,6 @@ import build.buf.protovalidate.ValidationResult;
 import build.buf.protovalidate.exceptions.ExecutionException;
 import build.buf.validate.Violation;
 import com.google.protobuf.Descriptors.OneofDescriptor;
-import com.google.protobuf.Message;
 import java.util.Collections;
 
 /** {@link OneofEvaluator} performs validation on a oneof union. */
