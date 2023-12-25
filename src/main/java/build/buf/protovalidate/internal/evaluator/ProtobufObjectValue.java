@@ -14,7 +14,6 @@
 
 package build.buf.protovalidate.internal.evaluator;
 
-import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import java.util.ArrayList;
@@ -97,7 +96,7 @@ public final class ProtobufObjectValue implements Value {
     List<Message> input =
         value instanceof List
             ? (List<Message>) value
-            : Collections.singletonList((AbstractMessage) value);
+            : Collections.singletonList((Message) value);
 
     Descriptors.FieldDescriptor keyDesc = fieldDescriptor.getMessageType().findFieldByNumber(1);
     Descriptors.FieldDescriptor valDesc = fieldDescriptor.getMessageType().findFieldByNumber(2);

@@ -28,8 +28,6 @@ class ProtoktValidator(
 
     private val evaluatorsByTypeUrl = ConcurrentHashMap<String, Evaluator>()
 
-    private class Validator
-
     fun load(descriptor: FileDescriptor) {
         descriptor
             .toProtobufJavaDescriptor()
