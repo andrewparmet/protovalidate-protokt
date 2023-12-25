@@ -1,25 +1,34 @@
 package build.buf.protovalidate.internal.evaluator
 
-import com.google.protobuf.Descriptors
 import com.google.protobuf.Descriptors.FieldDescriptor
+import com.google.protobuf.Descriptors.OneofDescriptor
+import com.google.protobuf.Message
 import protokt.v1.KtMessage
 
 interface MessageLike {
-    fun getRepeatedFieldCount(descriptor: Descriptors.FieldDescriptor): Int {
-        TODO()
-    }
+    fun getRepeatedFieldCount(field: FieldDescriptor): Int
 
-    fun hasField(descriptor: Descriptors.FieldDescriptor): Boolean {
-        TODO()
-    }
+    fun hasField(field: FieldDescriptor): Boolean
 
-    fun getField(descriptor: Descriptors.FieldDescriptor): Any {
-        TODO()
-    }
+    fun getField(field: FieldDescriptor): Any
 
-    fun getOneofFieldDescriptor(descriptor: Descriptors.OneofDescriptor): FieldDescriptor? {
-        TODO()
-    }
+    fun getOneofFieldDescriptor(oneof: OneofDescriptor): FieldDescriptor?
+}
+
+class ProtobufMessageLike(
+    val message: Message
+) : MessageLike {
+    override fun getRepeatedFieldCount(field: FieldDescriptor) =
+        message.getRepeatedFieldCount(field)
+
+    override fun hasField(field: FieldDescriptor) =
+        message.hasField(field)
+
+    override fun getField(field: FieldDescriptor) =
+        message.getField(field)
+
+    override fun getOneofFieldDescriptor(oneof: OneofDescriptor) =
+        message.getOneofFieldDescriptor(oneof)
 }
 
 class ProtoktMessageValue(

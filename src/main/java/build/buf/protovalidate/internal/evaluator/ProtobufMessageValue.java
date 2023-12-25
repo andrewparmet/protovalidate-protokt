@@ -34,17 +34,17 @@ public final class ProtobufMessageValue implements Value {
    * @param value The message value.
    */
   public ProtobufMessageValue(Message value) {
-    this.value = value;
+    this.value = new ProtobufMessageLike(value);
   }
 
   @Override
-  public ProtobufMessage messageValue() {
-    return (ProtobufMessage) value;
+  public MessageLike messageValue() {
+    return (MessageLike) value;
   }
 
   @Override
   public <T> T value(Class<T> clazz) {
-    return clazz.cast(value);
+    return clazz.cast(((ProtobufMessageLike) value).getMessage());
   }
 
   @Override

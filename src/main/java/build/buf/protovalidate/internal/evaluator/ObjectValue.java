@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+
+import com.google.protobuf.Message;
 import org.projectnessie.cel.common.ULong;
 
 /**
@@ -52,9 +54,9 @@ public final class ObjectValue implements Value {
 
   @Nullable
   @Override
-  public ProtobufMessage messageValue() {
+  public MessageLike messageValue() {
     if (fieldDescriptor.getType() == Descriptors.FieldDescriptor.Type.MESSAGE) {
-      return (ProtobufMessage) value;
+      return new ProtobufMessageLike((Message) value);
     }
     return null;
   }
