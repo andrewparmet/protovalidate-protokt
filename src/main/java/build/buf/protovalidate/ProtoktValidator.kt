@@ -36,6 +36,10 @@ class ProtoktValidator(
             }
     }
 
+    fun load(descriptor: Descriptors.Descriptor) {
+        evaluatorsByFullTypeName[descriptor.fullName] = evaluatorBuilder.load(descriptor)
+    }
+
     private fun FileDescriptor.toProtobufJavaDescriptor(): Descriptors.FileDescriptor =
         Descriptors.FileDescriptor.buildFrom(
             DescriptorProtos.FileDescriptorProto.parseFrom(proto.serialize()),

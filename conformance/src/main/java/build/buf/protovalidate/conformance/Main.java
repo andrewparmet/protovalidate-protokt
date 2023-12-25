@@ -54,6 +54,7 @@ public class Main {
       Map<String, Descriptors.Descriptor> descriptorMap =
           FileDescriptorUtil.parse(request.getFdset());
       ProtoktValidator validator = new ProtoktValidator();
+      descriptorMap.values().forEach(validator::load);
       TestConformanceResponse.Builder responseBuilder = TestConformanceResponse.newBuilder();
       Map<String, TestResult> resultsMap = new HashMap<>();
       for (Map.Entry<String, Any> entry : request.getCasesMap().entrySet()) {

@@ -30,10 +30,10 @@ object DynamicConcreteKtMessageDeserializer {
     fun parse(fullTypeName: String, bytes: InputStream): KtMessage {
         val deserializer = deserializersByFullTypeName[fullTypeName]
         if (deserializer == null) {
-            System.err.println("entry was null for $fullTypeName; $deserializersByFullTypeName")
+            throw NoSuchElementException("no entry found for $fullTypeName: $deserializersByFullTypeName")
         } else {
             System.err.println("found entry for $fullTypeName")
+            return deserializer.deserialize(bytes)
         }
-        return deserializersByFullTypeName.getValue(fullTypeName).deserialize(bytes)
     }
 }
