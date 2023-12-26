@@ -9,6 +9,7 @@ import protokt.v1.KtEnum
 import protokt.v1.KtMessage
 import protokt.v1.KtProperty
 import protokt.v1.google.protobuf.Empty
+import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
@@ -52,7 +53,7 @@ class ProtoktMessageLike(
         ProtoktObjectValue(fieldDescriptor, fieldValue)
 
     override fun getRepeatedFieldCount(field: FieldDescriptor): Int {
-        val value = getTopLevelFieldGetter<Any>(field).get(message)
+        val value = getTopLevelFieldGetter<Any>(field)!!.get(message)
         return if (value is List<*>) {
             value.size
         } else {
@@ -61,51 +62,70 @@ class ProtoktMessageLike(
     }
 
     override fun hasField(field: FieldDescriptor) =
-        getTopLevelFieldGetter<Any?>(field).get(message) != null
+        (getStandardField(field) ?: getOneofField(field)) != null
 
     override fun hasField(oneof: OneofDescriptor): Boolean {
         val fieldNumbers = oneof.fields.map { it.number }.toSet()
 
-        return message::class
-            .nestedClasses
-            .filter { it.isSealed && !it.isSubclassOf(KtEnum::class) }
-            .flatMap { it.nestedClasses }
+        val oneofSealedClasses =
+            message::class
+                .nestedClasses
+                .filter { it.isSealed && !it.isSubclassOf(KtEnum::class) }
 
-            .let { oneof ->
-                oneof::class
-                    .declaredMemberProperties
-                    .filterNot { it.name == Empty::messageSize.name }
-                    .filterNot { it.name == Empty::unknownFields.name }
-                    .filter {
-                        val annotation = it.findAnnotation<KtProperty>()
-                        if (annotation == null) {
-                            System.err.println("annotation was null for $message; oneof is $oneof; $it")
-                        }
-                        annotation!!.number in fieldNumbers
-                    }
-                    .map {
-                        @Suppress("UNCHECKED_CAST")
-                        it as KProperty1<KtMessage, Any?>
-                    }
-
-                getTopLevelFieldGetters<Any?> { it in fieldNumbers }
+        val classWithProperty =
+            oneofSealedClasses.single { sealedClass ->
+                val dataClasses = sealedClass.nestedClasses
+                dataClasses.flatMap { getTopLevelFieldGetters<Any>(it, fieldNumbers::contains) }.any()
             }
-            .mapNotNull { it.get(message) }
-            .any()
+
+        return message::class
+            .declaredMemberProperties
+            .single { it.returnType.classifier == classWithProperty }
+            .let {
+                @Suppress("UNCHECKED_CAST")
+                it as KProperty1<KtMessage, Any?>
+            }
+            .get(message) != null
+    }
+
+    private fun getStandardField(field: FieldDescriptor) =
+        getTopLevelFieldGetter<Any?>(field)?.get(message)
+
+    private fun getOneofField(field: FieldDescriptor): Any? {
+        val oneofSealedClasses =
+            message::class
+                .nestedClasses
+                .filter { it.isSealed && !it.isSubclassOf(KtEnum::class) }
+
+        val classWithProperty =
+            oneofSealedClasses.singleOrNull { sealedClass ->
+                val dataClasses = sealedClass.nestedClasses
+                dataClasses.flatMap { getTopLevelFieldGetters<Any>(it, field.number::equals) }.any()
+            } ?: return null
+
+        return message::class
+            .declaredMemberProperties
+            .single { it.returnType.classifier == classWithProperty }
+            .let {
+                @Suppress("UNCHECKED_CAST")
+                it as KProperty1<KtMessage, Any?>
+            }
+            .get(message) != null
     }
 
     override fun getField(field: FieldDescriptor) =
-        getTopLevelFieldGetter<Any>(field).get(message)
+        getStandardField(field) ?: getOneofField(field)!!
 
-    private fun <T> getTopLevelFieldGetter(fieldDescriptor: FieldDescriptor): KProperty1<KtMessage, T> =
-        getTopLevelFieldGetters<T> { it == fieldDescriptor.number }.single()
+    private fun <T> getTopLevelFieldGetter(fieldDescriptor: FieldDescriptor): KProperty1<KtMessage, T>? =
+        getTopLevelFieldGetters<T>(message::class, fieldDescriptor.number::equals).singleOrNull()
 
-    private fun <T> getTopLevelFieldGetters(condition: (Int) -> Boolean): List<KProperty1<KtMessage, T>> =
-        message::class
+    private fun <T> getTopLevelFieldGetters(klass: KClass<*>, condition: (Int) -> Boolean): List<KProperty1<KtMessage, T>> =
+        klass
             .declaredMemberProperties
-            .filterNot { it.name == Empty::messageSize.name }
-            .filterNot { it.name == Empty::unknownFields.name }
-            .filter { condition(it.findAnnotation<KtProperty>()!!.number) }
+            .filter {
+                val annotation = it.findAnnotation<KtProperty>()
+                annotation != null && condition(annotation.number)
+            }
             .map {
                 @Suppress("UNCHECKED_CAST")
                 it as KProperty1<KtMessage, T>
