@@ -8,6 +8,7 @@ import org.projectnessie.cel.common.ULong
 import protokt.v1.KtEnum
 import protokt.v1.KtMessage
 import protokt.v1.KtProperty
+import protokt.v1.google.protobuf.Empty
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
@@ -77,7 +78,15 @@ class ProtoktMessageLike(
     private fun <T> getTopLevelFieldGetters(condition: (Int) -> Boolean): List<KProperty1<KtMessage, T>> =
         message::class
             .declaredMemberProperties
-            .filter { condition(it.findAnnotation<KtProperty>()!!.number) }
+            .filterNot { it.name == Empty::messageSize.name }
+            .filterNot { it.name == Empty::unknownFields.name }
+            .filter {
+                val annotation =  it.findAnnotation<KtProperty>()
+                if (annotation == null) {
+                    //System.err.println("annotation was null for $it on $message")
+                }
+                condition(annotation!!.number)
+            }
             .map {
                 @Suppress("UNCHECKED_CAST")
                 it as KProperty1<KtMessage, T>
