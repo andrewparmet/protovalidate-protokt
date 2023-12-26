@@ -1,14 +1,21 @@
 package build.buf.protovalidate.internal.evaluator
 
+import com.google.protobuf.ByteString
+import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.Descriptors.FieldDescriptor
 import com.google.protobuf.Descriptors.FieldDescriptor.Type
 import com.google.protobuf.Descriptors.OneofDescriptor
+import com.google.protobuf.DynamicMessage
 import com.google.protobuf.Message
 import org.projectnessie.cel.common.ULong
+import protokt.v1.Bytes
 import protokt.v1.KtEnum
+import protokt.v1.KtGeneratedMessage
 import protokt.v1.KtMessage
 import protokt.v1.KtProperty
+import protokt.v1.google.protobuf.Duration
 import protokt.v1.google.protobuf.Empty
+import protokt.v1.google.protobuf.Timestamp
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
@@ -47,10 +54,11 @@ class ProtobufMessageLike(
 }
 
 class ProtoktMessageLike(
-    val message: KtMessage
+    val message: KtMessage,
+    private val descriptorsByFullTypeName: Map<String, Descriptor>
 ) : MessageLike {
     override fun newObjectValue(fieldDescriptor: FieldDescriptor, fieldValue: Any) =
-        ProtoktObjectValue(fieldDescriptor, fieldValue)
+        ProtoktObjectValue(fieldDescriptor, fieldValue, descriptorsByFullTypeName)
 
     override fun getRepeatedFieldCount(field: FieldDescriptor): Int {
         val value = getTopLevelFieldGetter<Any>(field)!!.get(message)
@@ -133,9 +141,10 @@ class ProtoktMessageLike(
 }
 
 class ProtoktMessageValue(
-    message: KtMessage
+    message: KtMessage,
+    descriptorsByFullTypeName: Map<String, Descriptor>
 ) : Value {
-    private val message = ProtoktMessageLike(message)
+    private val message = ProtoktMessageLike(message, descriptorsByFullTypeName)
 
     override fun messageValue() =
         message
@@ -151,15 +160,19 @@ class ProtoktMessageValue(
 
     override fun enumValue() =
         -1
+
+    override fun bindingValue() =
+        message.message
 }
 
 class ProtoktObjectValue(
     private val fieldDescriptor: FieldDescriptor,
-    private val value: Any
+    private val value: Any,
+    private val descriptorsByFullTypeName: Map<String, Descriptor>
 ) : Value {
     override fun messageValue() =
         if (fieldDescriptor.type == Type.MESSAGE) {
-            ProtoktMessageLike(value as KtMessage)
+            ProtoktMessageLike(value as KtMessage, descriptorsByFullTypeName)
         } else {
             null
         }
@@ -189,7 +202,7 @@ class ProtoktObjectValue(
 
     override fun repeatedValue() =
         if (fieldDescriptor.isRepeated) {
-            (value as List<*>).map { ProtoktObjectValue(fieldDescriptor, it!!) }
+            (value as List<*>).map { ProtoktObjectValue(fieldDescriptor, it!!, descriptorsByFullTypeName) }
         } else {
             emptyList<Value>()
         }
@@ -201,10 +214,34 @@ class ProtoktObjectValue(
         val valDesc = fieldDescriptor.messageType.findFieldByNumber(2)
 
         return input.entries.associate { (key, value) ->
-            ProtoktObjectValue(keyDesc, key!!) to ProtoktObjectValue(valDesc, value!!)
+            Pair(
+                ProtoktObjectValue(keyDesc, key!!, descriptorsByFullTypeName),
+                ProtoktObjectValue(valDesc, value!!, descriptorsByFullTypeName)
+            )
         }
     }
 
     override fun enumValue() =
         (value as KtEnum).value
+
+    override fun bindingValue() =
+        when (value) {
+            is KtEnum -> value.value
+            is UInt -> value.toLong()
+            is kotlin.ULong -> value.toLong()
+            is Bytes -> ByteString.copyFrom(value.asReadOnlyBuffer())
+            is Timestamp -> com.google.protobuf.Timestamp.newBuilder().setSeconds(value.seconds).setNanos(value.nanos).build()
+            is Duration -> com.google.protobuf.Duration.newBuilder().setSeconds(value.seconds).setNanos(value.nanos).build()
+
+            // todo: implement protokt support for CEL
+            is KtMessage ->
+                DynamicMessage.newBuilder(
+                    descriptorsByFullTypeName.getValue(value::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName)
+                )
+                    .mergeFrom(value.serialize())
+                    .build()
+
+            // pray
+            else -> value
+        }
 }

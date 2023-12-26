@@ -98,6 +98,7 @@ public class Main {
     } catch (CompilationException e) {
         return TestResult.newBuilder().setCompilationError(e.getMessage()).build();
     } catch (ExecutionException e) {
+        e.printStackTrace();
         return TestResult.newBuilder().setRuntimeError(e.getMessage()).build();
     } catch (Exception e) {
         e.printStackTrace();

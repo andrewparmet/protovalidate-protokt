@@ -7,6 +7,7 @@ import build.buf.protovalidate.internal.evaluator.EvaluatorBuilder
 import build.buf.protovalidate.internal.evaluator.ProtoktMessageValue
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.Descriptors
+import com.google.protobuf.Descriptors.Descriptor
 import org.projectnessie.cel.Env
 import org.projectnessie.cel.Library
 import protokt.v1.KtGeneratedMessage
@@ -28,19 +29,24 @@ class ProtoktValidator(
     private val failFast = config.isFailFast
 
     private val evaluatorsByFullTypeName = ConcurrentHashMap<String, Evaluator>()
+    private val descriptorsByFullTypeName = ConcurrentHashMap<String, Descriptor>()
 
     fun load(descriptor: FileDescriptor) {
         descriptor
             .toProtobufJavaDescriptor()
             .messageTypes
-            .forEach {
-                evaluatorsByFullTypeName[it.fullName] = evaluatorBuilder.load(it)
-            }
+            .forEach(::load)
     }
 
     @Throws(ValidationException::class)
-    fun load(descriptor: Descriptors.Descriptor) {
-        evaluatorsByFullTypeName[descriptor.fullName] = evaluatorBuilder.load(descriptor)
+    fun load(descriptor: Descriptor) {
+        try {
+            evaluatorsByFullTypeName[descriptor.fullName] = evaluatorBuilder.load(descriptor)
+            descriptorsByFullTypeName[descriptor.fullName] = descriptor
+        } catch (ex: Exception) {
+            System.err.println("error while loading ${descriptor.fullName}; this may be deliberate")
+        }
+        descriptor.nestedTypes.forEach(::load)
     }
 
     private fun FileDescriptor.toProtobufJavaDescriptor(): Descriptors.FileDescriptor =
@@ -54,5 +60,11 @@ class ProtoktValidator(
     fun validate(message: KtMessage): ValidationResult =
         evaluatorsByFullTypeName.getValue(
             message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName
-        ).evaluate(ProtoktMessageValue(message), failFast)
+        ).evaluate(
+            ProtoktMessageValue(
+                message,
+                descriptorsByFullTypeName
+            ),
+            failFast
+        )
 }

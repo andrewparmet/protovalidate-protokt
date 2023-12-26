@@ -65,4 +65,6 @@ public interface Value {
    *     enum.
    */
   int enumValue();
+
+  Object bindingValue();
 }

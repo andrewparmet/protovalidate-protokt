@@ -162,10 +162,11 @@ public class ConstraintCache {
       // CompilationError.
       throw new CompilationException(
           String.format(
-              "expected constraint %s, got %s on field %s",
+              "expected constraint %s, got %s on field %s, field constraints %s",
               expectedConstraintDescriptor.getName(),
               oneofFieldDescriptor.getName(),
-              fieldDescriptor.getName()));
+              fieldDescriptor.getName(),
+              fieldConstraints));
     }
 
     // If the expected constraint descriptor is null or if the field constraints do not have the

@@ -62,4 +62,9 @@ public final class ProtobufMessageValue implements Value {
   public int enumValue() {
     return value(Descriptors.EnumValueDescriptor.class).getNumber();
   }
+
+  @Override
+  public Object bindingValue() {
+    return value;
+  }
 }
