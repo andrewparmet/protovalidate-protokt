@@ -118,7 +118,7 @@ class ProtoktMessageLike(
                 .filter { it.isSealed && !it.isSubclassOf(KtEnum::class) }
 
         val classWithProperty =
-            oneofSealedClasses.singleOrNull { sealedClass ->
+            oneofSealedClasses.firstOrNull { sealedClass ->
                 val dataClasses = sealedClass.nestedClasses
                 dataClasses.flatMap { getTopLevelFieldGetters<Any>(it, field.number::equals) }.any()
             } ?: return null
@@ -133,14 +133,20 @@ class ProtoktMessageLike(
                 }
                 .get(message) ?: return null
 
-        return dataClassInstance::class
-            .declaredMemberProperties
-            .single()
-            .let {
-                @Suppress("UNCHECKED_CAST")
-                it as KProperty1<Any, Any?>
-            }
-            .get(dataClassInstance)
+        val dataClassProperty =
+            dataClassInstance::class
+                .declaredMemberProperties
+                .single()
+                .let {
+                    @Suppress("UNCHECKED_CAST")
+                    it as KProperty1<Any, Any?>
+                }
+
+        return if (dataClassProperty.findAnnotation<KtProperty>()!!.number == field.number) {
+            dataClassProperty.get(dataClassInstance)
+        } else {
+            null
+        }
     }
 
     override fun getField(field: FieldDescriptor) =

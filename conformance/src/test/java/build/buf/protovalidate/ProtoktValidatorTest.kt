@@ -4,10 +4,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import protokt.v1.buf.validate.conformance.cases.Int64Ignore
 import protokt.v1.buf.validate.conformance.cases.MessageRequiredOneof
+import protokt.v1.buf.validate.conformance.cases.Oneof
 import protokt.v1.buf.validate.conformance.cases.SInt64GT
 import protokt.v1.buf.validate.conformance.cases.TestMsg
 import protokt.v1.buf.validate.conformance.cases.messages_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.numbers_file_descriptor
+import protokt.v1.buf.validate.conformance.cases.oneofs_file_descriptor
 
 class ProtoktValidatorTest {
     private val validator = ProtoktValidator()
@@ -53,6 +55,21 @@ class ProtoktValidatorTest {
         val result =
             validator.validate(
                 Int64Ignore {}
+            )
+
+        assertThat(result.violations).isEmpty()
+        assertThat(result.isSuccess).isTrue()
+    }
+
+    @Test
+    fun `test oneof constraint`() {
+        validator.load(oneofs_file_descriptor.descriptor)
+
+        val result =
+            validator.validate(
+                Oneof {
+                    o = Oneof.O.X("foobar")
+                }
             )
 
         assertThat(result.violations).isEmpty()
