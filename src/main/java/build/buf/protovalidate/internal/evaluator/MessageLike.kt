@@ -177,17 +177,11 @@ class ProtoktMessageValue(
     override fun messageValue() =
         message
 
-    override fun value() =
-        message.message
-
     override fun repeatedValue() =
         emptyList<Value>()
 
     override fun mapValue() =
         emptyMap<Value, Value>()
-
-    override fun enumValue() =
-        -1
 
     override fun bindingValue() =
         dynamic(message.message, descriptorsByFullTypeName)
@@ -204,9 +198,6 @@ class ProtoktObjectValue(
         } else {
             null
         }
-
-    override fun value() =
-        bindingValue()
 
     override fun repeatedValue() =
         if (fieldDescriptor.isRepeated) {
@@ -228,9 +219,6 @@ class ProtoktObjectValue(
             )
         }
     }
-
-    override fun enumValue() =
-        (value as KtEnum).value
 
     override fun bindingValue() =
         when (value) {

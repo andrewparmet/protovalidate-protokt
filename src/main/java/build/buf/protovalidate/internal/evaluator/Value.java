@@ -34,13 +34,6 @@ public interface Value {
   MessageLike messageValue();
 
   /**
-   * Get the underlying value.
-   *
-   * @return The value.
-   */
-  Object value();
-
-  /**
    * Get the underlying value as a list.
    *
    * @return The underlying value as a list. Empty list is returned if the underlying type is not a
@@ -55,14 +48,6 @@ public interface Value {
    *     list.
    */
   Map<Value, Value> mapValue();
-
-  /**
-   * Get the underlying value as an enum value.
-   *
-   * @return The underlying value as an enum value. -1 is returned if the underlying type is not an
-   *     enum.
-   */
-  int enumValue();
 
   Object bindingValue();
 }

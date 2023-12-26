@@ -59,7 +59,10 @@ public final class ProtobufObjectValue implements Value {
   }
 
   @Override
-  public Object value() {
+  public Object bindingValue() {
+    if (value instanceof Descriptors.EnumValueDescriptor) {
+      return ((Descriptors.EnumValueDescriptor) value).getNumber();
+    }
     Descriptors.FieldDescriptor.Type type = fieldDescriptor.getType();
     if (!fieldDescriptor.isRepeated()
         && (type == Descriptors.FieldDescriptor.Type.UINT32
@@ -110,15 +113,5 @@ public final class ProtobufObjectValue implements Value {
     }
 
     return out;
-  }
-
-  @Override
-  public int enumValue() {
-    return ((Descriptors.EnumValueDescriptor) value).getNumber();
-  }
-
-  @Override
-  public Object bindingValue() {
-    return value();
   }
 }

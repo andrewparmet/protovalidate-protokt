@@ -59,7 +59,7 @@ tasks.withType<Javadoc> {
 }
 
 application {
-    mainClass.set("build.buf.protovalidate.conformance.Main2")
+    mainClass.set("build.buf.protovalidate.conformance.Main")
 }
 
 tasks {

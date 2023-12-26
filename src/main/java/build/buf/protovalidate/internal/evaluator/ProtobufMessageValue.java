@@ -14,7 +14,6 @@
 
 package build.buf.protovalidate.internal.evaluator;
 
-import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import java.util.Collections;
 import java.util.List;
@@ -44,7 +43,7 @@ public final class ProtobufMessageValue implements Value {
   }
 
   @Override
-  public Object value() {
+  public Object bindingValue() {
     return ((ProtobufMessageLike) value).getMessage();
   }
 
@@ -56,15 +55,5 @@ public final class ProtobufMessageValue implements Value {
   @Override
   public Map<Value, Value> mapValue() {
     return Collections.emptyMap();
-  }
-
-  @Override
-  public int enumValue() {
-    return ((Descriptors.EnumValueDescriptor) value).getNumber();
-  }
-
-  @Override
-  public Object bindingValue() {
-    return value;
   }
 }

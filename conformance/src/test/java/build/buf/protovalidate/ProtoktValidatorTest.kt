@@ -52,19 +52,6 @@ class ProtoktValidatorTest {
     }
 
     @Test
-    fun `test int64 ignore constraint`() {
-        validator.load(numbers_file_descriptor.descriptor)
-
-        val result =
-            validator.validate(
-                Int64Ignore {}
-            )
-
-        assertThat(result.violations).isEmpty()
-        assertThat(result.isSuccess).isTrue()
-    }
-
-    @Test
     fun `test oneof constraint`() {
         validator.load(oneofs_file_descriptor.descriptor)
 

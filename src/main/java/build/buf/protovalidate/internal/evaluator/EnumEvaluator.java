@@ -62,7 +62,7 @@ class EnumEvaluator implements Evaluator {
    */
   @Override
   public ValidationResult evaluate(Value val, boolean failFast) throws ExecutionException {
-    int enumValue = val.enumValue();
+    int enumValue = (int) val.bindingValue();
     if (enumValue == -1) {
       return ValidationResult.EMPTY;
     }

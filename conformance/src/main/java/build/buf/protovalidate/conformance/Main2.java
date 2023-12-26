@@ -86,7 +86,10 @@ public class Main2 {
   }
 
   private static TestResult validate(
-      ProtoktValidator validator, KtMessage message, Iterable<Descriptors.Descriptor> descriptors, ByteString input) {
+      ProtoktValidator validator,
+      KtMessage message,
+      Iterable<Descriptors.Descriptor> descriptors,
+      ByteString input) {
     try {
       for (Descriptors.Descriptor it : descriptors) {
         validator.load(it, message);
@@ -95,9 +98,10 @@ public class Main2 {
       ValidationResult result = validator.validate(message);
       List<Violation> violations = result.getViolations();
       if (ProtoktShortCircuit.shortCircuitFailure(message, input)) {
-        return TestResult.newBuilder().setValidationError(
-          Violations.newBuilder().addViolations(Violation.newBuilder().build()).build()
-        ).build();
+        return TestResult.newBuilder()
+            .setValidationError(
+                Violations.newBuilder().addViolations(Violation.newBuilder().build()).build())
+            .build();
       }
       if (violations.isEmpty() || ProtoktShortCircuit.shortCircuit(message, input)) {
         return TestResult.newBuilder().setSuccess(true).build();
