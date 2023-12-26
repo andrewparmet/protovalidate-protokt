@@ -53,6 +53,7 @@ class ProtobufMessageLike(
 }
 
 // todo: cache field lookup paths for message class/descriptor pairs
+// todo: or just cache general reflection info globally
 class ProtoktMessageLike(
     val message: KtMessage,
     private val descriptorsByFullTypeName: Map<String, Descriptor>
