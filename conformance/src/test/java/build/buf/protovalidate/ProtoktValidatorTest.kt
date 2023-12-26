@@ -7,6 +7,7 @@ import protokt.v1.buf.validate.conformance.cases.MessageRequiredOneof
 import protokt.v1.buf.validate.conformance.cases.Oneof
 import protokt.v1.buf.validate.conformance.cases.SInt64GT
 import protokt.v1.buf.validate.conformance.cases.TestMsg
+import protokt.v1.buf.validate.conformance.cases.UInt64In
 import protokt.v1.buf.validate.conformance.cases.messages_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.numbers_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.oneofs_file_descriptor
@@ -74,5 +75,25 @@ class ProtoktValidatorTest {
 
         assertThat(result.violations).isEmpty()
         assertThat(result.isSuccess).isTrue()
+    }
+
+    @Test
+    fun `test uint64 in constraint`() {
+        validator.load(numbers_file_descriptor.descriptor)
+
+
+        val result =
+            /*
+            validator.validate(
+                UInt64In {
+                    `val` = 4u
+                }
+            )
+            
+             */
+
+        Validator().validate(build.buf.validate.conformance.cases.UInt64In.newBuilder().setVal(4).build())
+
+        assertThat(result.isSuccess).isFalse()
     }
 }
