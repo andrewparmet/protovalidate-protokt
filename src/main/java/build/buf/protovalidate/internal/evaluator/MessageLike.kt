@@ -69,6 +69,8 @@ class ProtoktMessageLike(
     }
 
     // todo: protokt needs to track presence of scalars with a private backing field
+    // bring this up with buf team, as this is not required by the proto3 presence tracking spec:
+    // https://github.com/protocolbuffers/protobuf/blob/a4576cb8208ea8f1c4b05b9bb35533201e301171/docs/field_presence.md?plain=1#L103
     /*
         class Foo(
             private val _possiblyNotThere: Int?
