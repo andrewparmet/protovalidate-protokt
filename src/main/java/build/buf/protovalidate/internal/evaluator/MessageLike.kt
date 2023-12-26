@@ -182,20 +182,13 @@ class ProtoktObjectValue(
         }
 
     override fun mapValue(): Map<Value, Value> {
-        @Suppress("UNCHECKED_CAST")
-        val input = (value as? List<KtMessage>) ?: listOf(value as KtMessage)
+        val input = value as Map<*, *>
 
         val keyDesc = fieldDescriptor.messageType.findFieldByNumber(1)
         val valDesc = fieldDescriptor.messageType.findFieldByNumber(2)
 
-        return input.associate {
-            val keyValue = ProtoktMessageLike(it).getField(keyDesc)
-            val keyProtoktValue = ProtoktObjectValue(keyDesc, keyValue)
-
-            val valValue = ProtoktMessageLike(it).getField(valDesc)
-            val valProtoktValue = ProtoktObjectValue(valDesc, valValue)
-
-            keyProtoktValue to valProtoktValue
+        return input.entries.associate { (key, value) ->
+            ProtoktObjectValue(keyDesc, key!!) to ProtoktObjectValue(valDesc, value!!)
         }
     }
 }
