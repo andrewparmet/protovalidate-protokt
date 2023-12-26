@@ -205,26 +205,8 @@ class ProtoktObjectValue(
             null
         }
 
-    override fun value(): Any? {
-        val type = fieldDescriptor.type
-
-        return if (
-            !fieldDescriptor.isRepeated &&
-            type in setOf(Type.UINT32, Type.UINT64, Type.FIXED32, Type.FIXED64)
-        ) {
-            ULong.valueOf(
-                when (type) {
-                    Type.UINT32 -> (value as UInt).toLong()
-                    Type.UINT64 -> (value as kotlin.ULong).toLong()
-                    Type.FIXED32 -> (value as UInt).toLong()
-                    Type.FIXED64 -> (value as kotlin.ULong).toLong()
-                    else -> error("unsupported unsigned conversion: $type")
-                }
-            )
-        } else {
-            value
-        }
-    }
+    override fun value() =
+        bindingValue()
 
     override fun repeatedValue() =
         if (fieldDescriptor.isRepeated) {

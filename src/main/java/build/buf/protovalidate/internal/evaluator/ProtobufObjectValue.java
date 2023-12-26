@@ -119,6 +119,6 @@ public final class ProtobufObjectValue implements Value {
 
   @Override
   public Object bindingValue() {
-    return value;
+    return value();
   }
 }
