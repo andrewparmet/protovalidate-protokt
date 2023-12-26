@@ -94,9 +94,7 @@ public final class ProtobufObjectValue implements Value {
   public Map<Value, Value> mapValue() {
     @SuppressWarnings("unchecked")
     List<Message> input =
-        value instanceof List
-            ? (List<Message>) value
-            : Collections.singletonList((Message) value);
+        value instanceof List ? (List<Message>) value : Collections.singletonList((Message) value);
 
     Descriptors.FieldDescriptor keyDesc = fieldDescriptor.getMessageType().findFieldByNumber(1);
     Descriptors.FieldDescriptor valDesc = fieldDescriptor.getMessageType().findFieldByNumber(2);

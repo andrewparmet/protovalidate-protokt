@@ -1,4 +1,3 @@
-import com.diffplug.gradle.spotless.ProtobufExtension
 import com.diffplug.gradle.spotless.SpotlessExtension
 import net.ltgt.gradle.errorprone.errorprone
 import protokt.v1.gradle.ProtoktExtension
