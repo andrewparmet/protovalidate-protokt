@@ -51,8 +51,14 @@ class ProtoktMessageLike(
     override fun newObjectValue(fieldDescriptor: FieldDescriptor, fieldValue: Any) =
         ProtoktObjectValue(fieldDescriptor, fieldValue)
 
-    override fun getRepeatedFieldCount(field: FieldDescriptor) =
-        getTopLevelFieldGetter<Collection<*>>(field).get(message).size
+    override fun getRepeatedFieldCount(field: FieldDescriptor): Int {
+        val value = getTopLevelFieldGetter<Any>(field).get(message)
+        return if (value is List<*>) {
+            value.size
+        } else {
+            (value as Map<*, *>).size
+        }
+    }
 
     override fun hasField(field: FieldDescriptor) =
         getTopLevelFieldGetter<Any?>(field).get(message) != null
@@ -64,7 +70,26 @@ class ProtoktMessageLike(
             .nestedClasses
             .filter { it.isSealed && !it.isSubclassOf(KtEnum::class) }
             .flatMap { it.nestedClasses }
-            .let { getTopLevelFieldGetters<Any?> { it in fieldNumbers } }
+
+            .let { oneof ->
+                oneof::class
+                    .declaredMemberProperties
+                    .filterNot { it.name == Empty::messageSize.name }
+                    .filterNot { it.name == Empty::unknownFields.name }
+                    .filter {
+                        val annotation = it.findAnnotation<KtProperty>()
+                        if (annotation == null) {
+                            System.err.println("annotation was null for $message; oneof is $oneof; $it")
+                        }
+                        annotation!!.number in fieldNumbers
+                    }
+                    .map {
+                        @Suppress("UNCHECKED_CAST")
+                        it as KProperty1<KtMessage, Any?>
+                    }
+
+                getTopLevelFieldGetters<Any?> { it in fieldNumbers }
+            }
             .mapNotNull { it.get(message) }
             .any()
     }
@@ -80,13 +105,7 @@ class ProtoktMessageLike(
             .declaredMemberProperties
             .filterNot { it.name == Empty::messageSize.name }
             .filterNot { it.name == Empty::unknownFields.name }
-            .filter {
-                val annotation =  it.findAnnotation<KtProperty>()
-                if (annotation == null) {
-                    //System.err.println("annotation was null for $it on $message")
-                }
-                condition(annotation!!.number)
-            }
+            .filter { condition(it.findAnnotation<KtProperty>()!!.number) }
             .map {
                 @Suppress("UNCHECKED_CAST")
                 it as KProperty1<KtMessage, T>
