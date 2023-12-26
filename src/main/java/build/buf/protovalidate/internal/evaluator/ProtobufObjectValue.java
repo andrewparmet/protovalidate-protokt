@@ -113,4 +113,9 @@ public final class ProtobufObjectValue implements Value {
 
     return out;
   }
+
+  @Override
+  public int enumValue() {
+    return value(Descriptors.EnumValueDescriptor.class).getNumber();
+  }
 }

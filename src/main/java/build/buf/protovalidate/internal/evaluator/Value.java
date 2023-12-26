@@ -57,4 +57,12 @@ public interface Value {
    *     list.
    */
   Map<Value, Value> mapValue();
+
+  /**
+   * Get the underlying value as an enum value.
+   *
+   * @return The underlying value as an enum value. -1 is returned if the underlying type is not an
+   *     enum.
+   */
+  int enumValue();
 }

@@ -148,6 +148,9 @@ class ProtoktMessageValue(
 
     override fun mapValue() =
         emptyMap<Value, Value>()
+
+    override fun enumValue() =
+        -1
 }
 
 class ProtoktObjectValue(
@@ -168,7 +171,17 @@ class ProtoktObjectValue(
             !fieldDescriptor.isRepeated &&
             type in setOf(Type.UINT32, Type.UINT64, Type.FIXED32, Type.FIXED64)
         ) {
-            clazz.cast(ULong.valueOf((value as Number).toLong()))
+            clazz.cast(
+                ULong.valueOf(
+                    when (type) {
+                        Type.UINT32 -> (value as UInt).toLong()
+                        Type.UINT64 -> (value as kotlin.ULong).toLong()
+                        Type.FIXED32 -> (value as UInt).toLong()
+                        Type.FIXED64 -> (value as kotlin.ULong).toLong()
+                        else -> error("unsupported unsigned conversion: $type")
+                    }
+                )
+            )
         } else {
             clazz.cast(value)
         }
@@ -191,4 +204,7 @@ class ProtoktObjectValue(
             ProtoktObjectValue(keyDesc, key!!) to ProtoktObjectValue(valDesc, value!!)
         }
     }
+
+    override fun enumValue() =
+        (value as KtEnum).value
 }
