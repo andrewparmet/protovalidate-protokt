@@ -2,6 +2,7 @@ package build.buf.protovalidate
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import protokt.v1.buf.validate.conformance.cases.Int64Ignore
 import protokt.v1.buf.validate.conformance.cases.MessageRequiredOneof
 import protokt.v1.buf.validate.conformance.cases.SInt64GT
 import protokt.v1.buf.validate.conformance.cases.TestMsg
@@ -39,6 +40,19 @@ class ProtoktValidatorTest {
                         }
                     )
                 }
+            )
+
+        assertThat(result.violations).isEmpty()
+        assertThat(result.isSuccess).isTrue()
+    }
+
+    @Test
+    fun `test int64 ignore constraint`() {
+        validator.load(numbers_file_descriptor.descriptor)
+
+        val result =
+            validator.validate(
+                Int64Ignore {}
             )
 
         assertThat(result.violations).isEmpty()

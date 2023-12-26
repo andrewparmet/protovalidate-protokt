@@ -217,13 +217,7 @@ public class EvaluatorBuilder {
         FieldDescriptor descriptor = desc.findFieldByName(fieldDescriptor.getName());
         FieldConstraints fieldConstraints =
             resolver.resolveFieldConstraints(descriptor, EXTENSION_REGISTRY);
-        FieldEvaluator fldEval;
-        try {
-          fldEval = buildField(descriptor, fieldConstraints);
-        } catch (Exception ex) {
-          resolver.resolveFieldConstraints(descriptor, EXTENSION_REGISTRY);
-          throw ex;
-        }
+        FieldEvaluator fldEval = buildField(descriptor, fieldConstraints);
         msgEval.append(fldEval);
       }
     }
