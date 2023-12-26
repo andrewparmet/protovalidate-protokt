@@ -16,6 +16,8 @@ package build.buf.protovalidate.conformance;
 
 import build.buf.protovalidate.ProtoktValidator;
 import build.buf.protovalidate.ValidationResult;
+import build.buf.protovalidate.exceptions.CompilationException;
+import build.buf.protovalidate.exceptions.ExecutionException;
 import build.buf.validate.ValidateProto;
 import build.buf.validate.Violation;
 import build.buf.validate.Violations;
@@ -54,7 +56,6 @@ public class Main {
       Map<String, Descriptors.Descriptor> descriptorMap =
           FileDescriptorUtil.parse(request.getFdset());
       ProtoktValidator validator = new ProtoktValidator();
-      descriptorMap.values().forEach(validator::load);
       TestConformanceResponse.Builder responseBuilder = TestConformanceResponse.newBuilder();
       Map<String, TestResult> resultsMap = new HashMap<>();
       for (Map.Entry<String, Any> entry : request.getCasesMap().entrySet()) {
@@ -78,11 +79,15 @@ public class Main {
     }
     ByteString testCaseValue = testCase.getValue();
     KtMessage message = DynamicConcreteKtMessageDeserializer.parse(fullName, testCaseValue.newInput());
-    return validate(validator, message);
+    return validate(validator, message, fileDescriptors.values());
   }
 
-  private static TestResult validate(ProtoktValidator validator, KtMessage message) {
+  private static TestResult validate(ProtoktValidator validator, KtMessage message, Iterable<Descriptors.Descriptor> descriptors) {
     try {
+      for (Descriptors.Descriptor it : descriptors) {
+        validator.load(it);
+      }
+      System.err.println("executing test for message of type " + message.getClass());
       ValidationResult result = validator.validate(message);
       List<Violation> violations = result.getViolations();
       if (violations.isEmpty()) {
@@ -90,8 +95,12 @@ public class Main {
       }
       Violations error = Violations.newBuilder().addAllViolations(violations).build();
       return TestResult.newBuilder().setValidationError(error).build();
+    } catch (CompilationException e) {
+        return TestResult.newBuilder().setCompilationError(e.getMessage()).build();
+    } catch (ExecutionException e) {
+        return TestResult.newBuilder().setRuntimeError(e.getMessage()).build();
     } catch (Exception e) {
-      return unexpectedErrorResult("unknown error: %s", e.toString());
+        return unexpectedErrorResult("unknown error: %s", e.toString());
     }
   }
 

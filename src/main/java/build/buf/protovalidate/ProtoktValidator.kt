@@ -1,5 +1,6 @@
 package build.buf.protovalidate
 
+import build.buf.protovalidate.exceptions.ValidationException
 import build.buf.protovalidate.internal.celext.ValidateLibrary
 import build.buf.protovalidate.internal.evaluator.Evaluator
 import build.buf.protovalidate.internal.evaluator.EvaluatorBuilder
@@ -12,6 +13,7 @@ import protokt.v1.KtGeneratedMessage
 import protokt.v1.KtMessage
 import protokt.v1.google.protobuf.FileDescriptor
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.jvm.Throws
 import kotlin.reflect.full.findAnnotation
 
 class ProtoktValidator(
@@ -36,6 +38,7 @@ class ProtoktValidator(
             }
     }
 
+    @Throws(ValidationException::class)
     fun load(descriptor: Descriptors.Descriptor) {
         evaluatorsByFullTypeName[descriptor.fullName] = evaluatorBuilder.load(descriptor)
     }
@@ -47,6 +50,7 @@ class ProtoktValidator(
             true
         )
 
+    @Throws(ValidationException::class)
     fun validate(message: KtMessage): ValidationResult =
         evaluatorsByFullTypeName.getValue(
             message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName

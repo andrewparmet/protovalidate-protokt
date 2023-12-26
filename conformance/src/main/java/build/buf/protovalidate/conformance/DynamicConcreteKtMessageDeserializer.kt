@@ -27,13 +27,6 @@ object DynamicConcreteKtMessageDeserializer {
     }
 
     @JvmStatic
-    fun parse(fullTypeName: String, bytes: InputStream): KtMessage {
-        val deserializer = deserializersByFullTypeName[fullTypeName]
-        if (deserializer == null) {
-            throw NoSuchElementException("no entry found for $fullTypeName: $deserializersByFullTypeName")
-        } else {
-            System.err.println("found entry for $fullTypeName")
-            return deserializer.deserialize(bytes)
-        }
-    }
+    fun parse(fullTypeName: String, bytes: InputStream): KtMessage =
+        deserializersByFullTypeName.getValue(fullTypeName).deserialize(bytes)
 }
