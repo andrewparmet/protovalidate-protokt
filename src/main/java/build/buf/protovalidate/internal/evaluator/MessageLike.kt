@@ -253,8 +253,8 @@ class ProtoktObjectValue(
     override fun bindingValue() =
         when (value) {
             is KtEnum -> value.value
-            is UInt -> value.toInt()
-            is kotlin.ULong -> value.toLong()
+            is UInt -> ULong.valueOf(value.toLong())
+            is kotlin.ULong -> ULong.valueOf(value.toLong())
             is Bytes -> ByteString.copyFrom(value.asReadOnlyBuffer())
             is Timestamp -> com.google.protobuf.Timestamp.newBuilder().setSeconds(value.seconds).setNanos(value.nanos).build()
             is Duration -> com.google.protobuf.Duration.newBuilder().setSeconds(value.seconds).setNanos(value.nanos).build()

@@ -80,19 +80,13 @@ class ProtoktValidatorTest {
     @Test
     fun `test uint64 in constraint`() {
         validator.load(numbers_file_descriptor.descriptor)
-
-
+        
         val result =
-            /*
             validator.validate(
                 UInt64In {
                     `val` = 4u
                 }
             )
-            
-             */
-
-        Validator().validate(build.buf.validate.conformance.cases.UInt64In.newBuilder().setVal(4).build())
 
         assertThat(result.isSuccess).isFalse()
     }
