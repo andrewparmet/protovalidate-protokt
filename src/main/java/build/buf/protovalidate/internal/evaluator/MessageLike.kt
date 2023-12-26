@@ -234,12 +234,14 @@ class ProtoktObjectValue(
             is Duration -> com.google.protobuf.Duration.newBuilder().setSeconds(value.seconds).setNanos(value.nanos).build()
 
             // todo: implement protokt support for CEL
-            is KtMessage ->
+            is KtMessage -> {
+                System.err.println("dynamically rebuilding $value")
                 DynamicMessage.newBuilder(
                     descriptorsByFullTypeName.getValue(value::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName)
                 )
                     .mergeFrom(value.serialize())
                     .build()
+            }
 
             // pray
             else -> value

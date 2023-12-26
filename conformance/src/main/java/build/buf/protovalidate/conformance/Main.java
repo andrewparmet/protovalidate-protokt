@@ -89,7 +89,7 @@ public class Main {
       ProtoktValidator validator, KtMessage message, Iterable<Descriptors.Descriptor> descriptors) {
     try {
       for (Descriptors.Descriptor it : descriptors) {
-        validator.load(it);
+        validator.load(it, message);
       }
       System.err.println("executing test for message of type " + message.getClass());
       ValidationResult result = validator.validate(message);

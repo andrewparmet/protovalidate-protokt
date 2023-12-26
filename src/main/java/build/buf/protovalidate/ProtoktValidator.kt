@@ -39,14 +39,19 @@ class ProtoktValidator(
     }
 
     @Throws(ValidationException::class)
-    fun load(descriptor: Descriptor) {
+    fun load(descriptor: Descriptor, message: KtMessage? = null) {
+        descriptorsByFullTypeName[descriptor.fullName] = descriptor
         try {
             evaluatorsByFullTypeName[descriptor.fullName] = evaluatorBuilder.load(descriptor)
-            descriptorsByFullTypeName[descriptor.fullName] = descriptor
         } catch (ex: Exception) {
-            System.err.println("error while loading ${descriptor.fullName}; this may be deliberate")
+            // idiosyncrasy of the conformance suite runner requires this particular exception is rethrown rather than a lookup failure later
+            if (message != null) {
+                if (message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName == descriptor.fullName) {
+                    throw ex
+                }
+            }
         }
-        descriptor.nestedTypes.forEach(::load)
+        descriptor.nestedTypes.forEach { load(it, message) }
     }
 
     private fun FileDescriptor.toProtobufJavaDescriptor(): Descriptors.FileDescriptor =
