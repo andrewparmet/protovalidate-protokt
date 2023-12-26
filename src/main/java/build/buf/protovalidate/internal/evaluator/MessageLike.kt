@@ -14,7 +14,6 @@ import protokt.v1.KtGeneratedMessage
 import protokt.v1.KtMessage
 import protokt.v1.KtProperty
 import protokt.v1.google.protobuf.Duration
-import protokt.v1.google.protobuf.Empty
 import protokt.v1.google.protobuf.Timestamp
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
@@ -153,7 +152,7 @@ class ProtoktMessageLike(
 
 class ProtoktMessageValue(
     message: KtMessage,
-    descriptorsByFullTypeName: Map<String, Descriptor>
+    private val descriptorsByFullTypeName: Map<String, Descriptor>
 ) : Value {
     private val message = ProtoktMessageLike(message, descriptorsByFullTypeName)
 
@@ -173,7 +172,7 @@ class ProtoktMessageValue(
         -1
 
     override fun bindingValue() =
-        message.message
+        dynamic(message.message, descriptorsByFullTypeName)
 }
 
 class ProtoktObjectValue(
@@ -243,18 +242,17 @@ class ProtoktObjectValue(
             is Bytes -> ByteString.copyFrom(value.asReadOnlyBuffer())
             is Timestamp -> com.google.protobuf.Timestamp.newBuilder().setSeconds(value.seconds).setNanos(value.nanos).build()
             is Duration -> com.google.protobuf.Duration.newBuilder().setSeconds(value.seconds).setNanos(value.nanos).build()
-
-            // todo: implement protokt support for CEL
-            is KtMessage -> {
-                System.err.println("dynamically rebuilding $value")
-                DynamicMessage.newBuilder(
-                    descriptorsByFullTypeName.getValue(value::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName)
-                )
-                    .mergeFrom(value.serialize())
-                    .build()
-            }
+            is KtMessage -> dynamic(value, descriptorsByFullTypeName)
 
             // pray
             else -> value
         }
+}
+
+// todo: implement protokt support for CEL
+private fun dynamic(message: KtMessage, descriptorsByFullTypeName: Map<String, Descriptor>): Message {
+    System.err.println("dynamically rebuilding $message")
+    return DynamicMessage.newBuilder(descriptorsByFullTypeName.getValue(message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName))
+        .mergeFrom(message.serialize())
+        .build()
 }
