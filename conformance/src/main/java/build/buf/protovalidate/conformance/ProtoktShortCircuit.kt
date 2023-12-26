@@ -5,6 +5,7 @@ import build.buf.validate.conformance.cases.DoubleIgnore
 import build.buf.validate.conformance.cases.Fixed32Ignore
 import build.buf.validate.conformance.cases.Fixed64Ignore
 import build.buf.validate.conformance.cases.FloatIgnore
+import build.buf.validate.conformance.cases.IgnoreEmptyProto3Scalar
 import build.buf.validate.conformance.cases.Int32Ignore
 import build.buf.validate.conformance.cases.Int64Ignore
 import build.buf.validate.conformance.cases.SFixed32Ignore
@@ -73,6 +74,10 @@ object ProtoktShortCircuit {
             "buf.validate.conformance.cases.DoubleIgnore" ->
                 DoubleIgnore.parseFrom(input).let {
                     it.`val` == 0.0 && !it.hasField(DoubleIgnore.getDescriptor().findFieldByName("val"))
+                }
+            "buf.validate.conformance.cases.IgnoreEmptyProto3Scalar" ->
+                IgnoreEmptyProto3Scalar.parseFrom(input).let {
+                    it.`val` == 0 && !it.hasField(IgnoreEmptyProto3Scalar.getDescriptor().findFieldByName("val"))
                 }
             "buf.validate.conformance.cases.BytesIPv6Ignore" ->
                 BytesIPv6Ignore.parseFrom(input).let {
