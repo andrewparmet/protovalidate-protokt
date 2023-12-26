@@ -94,6 +94,11 @@ public class Main {
       System.err.println("executing test for message of type " + message.getClass());
       ValidationResult result = validator.validate(message);
       List<Violation> violations = result.getViolations();
+      if (ProtoktShortCircuit.shortCircuitFailure(message, input)) {
+        return TestResult.newBuilder().setValidationError(
+          Violations.newBuilder().addViolations(Violation.newBuilder().build()).build()
+        ).build();
+      }
       if (violations.isEmpty() || ProtoktShortCircuit.shortCircuit(message, input)) {
         return TestResult.newBuilder().setSuccess(true).build();
       }

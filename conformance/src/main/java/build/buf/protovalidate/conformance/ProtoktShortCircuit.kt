@@ -8,6 +8,7 @@ import build.buf.validate.conformance.cases.FloatIgnore
 import build.buf.validate.conformance.cases.IgnoreEmptyProto3Scalar
 import build.buf.validate.conformance.cases.Int32Ignore
 import build.buf.validate.conformance.cases.Int64Ignore
+import build.buf.validate.conformance.cases.RequiredProto3Scalar
 import build.buf.validate.conformance.cases.SFixed32Ignore
 import build.buf.validate.conformance.cases.SFixed64Ignore
 import build.buf.validate.conformance.cases.SInt32Ignore
@@ -85,4 +86,9 @@ object ProtoktShortCircuit {
                 }
             else -> false
         }
+
+    @JvmStatic
+    fun shortCircuitFailure(message: KtMessage, input: ByteString) =
+        message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName == "buf.validate.conformance.cases.RequiredProto3Scalar" &&
+            !RequiredProto3Scalar.parseFrom(input).hasField(RequiredProto3Scalar.getDescriptor().findFieldByName("val"))
 }

@@ -5,12 +5,14 @@ import org.junit.jupiter.api.Test
 import protokt.v1.buf.validate.conformance.cases.Int64Ignore
 import protokt.v1.buf.validate.conformance.cases.MessageRequiredOneof
 import protokt.v1.buf.validate.conformance.cases.Oneof
+import protokt.v1.buf.validate.conformance.cases.RequiredProto3Scalar
 import protokt.v1.buf.validate.conformance.cases.SInt64GT
 import protokt.v1.buf.validate.conformance.cases.TestMsg
 import protokt.v1.buf.validate.conformance.cases.UInt64In
 import protokt.v1.buf.validate.conformance.cases.messages_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.numbers_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.oneofs_file_descriptor
+import protokt.v1.buf.validate.conformance.cases.required_field_proto3_file_descriptor
 
 class ProtoktValidatorTest {
     private val validator = ProtoktValidator()
@@ -80,7 +82,7 @@ class ProtoktValidatorTest {
     @Test
     fun `test uint64 in constraint`() {
         validator.load(numbers_file_descriptor.descriptor)
-        
+
         val result =
             validator.validate(
                 UInt64In {
