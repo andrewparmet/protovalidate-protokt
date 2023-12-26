@@ -72,6 +72,7 @@ class ProtoktMessageLike(
     override fun hasField(field: FieldDescriptor) =
         (getStandardField(field) ?: getOneofField(field)) != null
 
+    // todo: can maybe be unified with getOneofField
     override fun hasField(oneof: OneofDescriptor): Boolean {
         val fieldNumbers = oneof.fields.map { it.number }.toSet()
 
@@ -111,14 +112,24 @@ class ProtoktMessageLike(
                 dataClasses.flatMap { getTopLevelFieldGetters<Any>(it, field.number::equals) }.any()
             } ?: return null
 
-        return message::class
+        val dataClassInstance =
+            message::class
+                .declaredMemberProperties
+                .single { it.returnType.classifier == classWithProperty }
+                .let {
+                    @Suppress("UNCHECKED_CAST")
+                    it as KProperty1<KtMessage, Any?>
+                }
+                .get(message) ?: return null
+
+        return dataClassInstance::class
             .declaredMemberProperties
-            .single { it.returnType.classifier == classWithProperty }
+            .single()
             .let {
                 @Suppress("UNCHECKED_CAST")
-                it as KProperty1<KtMessage, Any?>
+                it as KProperty1<Any, Any?>
             }
-            .get(message) != null
+            .get(dataClassInstance)
     }
 
     override fun getField(field: FieldDescriptor) =
