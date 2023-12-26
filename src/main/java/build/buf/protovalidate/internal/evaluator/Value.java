@@ -34,13 +34,11 @@ public interface Value {
   MessageLike messageValue();
 
   /**
-   * Get the underlying value and cast it to the class type.
+   * Get the underlying value.
    *
-   * @param clazz The inferred class.
-   * @return The value casted to the inferred class type.
-   * @param <T> The class type.
+   * @return The value.
    */
-  <T> T value(Class<T> clazz);
+  Object value();
 
   /**
    * Get the underlying value as a list.

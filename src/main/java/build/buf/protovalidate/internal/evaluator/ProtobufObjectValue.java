@@ -59,7 +59,7 @@ public final class ProtobufObjectValue implements Value {
   }
 
   @Override
-  public <T> T value(Class<T> clazz) {
+  public Object value() {
     Descriptors.FieldDescriptor.Type type = fieldDescriptor.getType();
     if (!fieldDescriptor.isRepeated()
         && (type == Descriptors.FieldDescriptor.Type.UINT32
@@ -73,9 +73,9 @@ public final class ProtobufObjectValue implements Value {
        * When using uint32/uint64 in your protobuf objects or CEL expressions in Java,
        * wrap them with the org.projectnessie.cel.common.ULong type.
        */
-      return clazz.cast(ULong.valueOf(((Number) value).longValue()));
+      return ULong.valueOf(((Number) value).longValue());
     }
-    return clazz.cast(value);
+    return value;
   }
 
   @Override
@@ -114,7 +114,7 @@ public final class ProtobufObjectValue implements Value {
 
   @Override
   public int enumValue() {
-    return value(Descriptors.EnumValueDescriptor.class).getNumber();
+    return ((Descriptors.EnumValueDescriptor) value).getNumber();
   }
 
   @Override

@@ -49,7 +49,7 @@ class ValueEvaluator implements Evaluator {
 
   @Override
   public ValidationResult evaluate(Value val, boolean failFast) throws ExecutionException {
-    if (this.shouldIgnore(val.value(Object.class))) {
+    if (this.shouldIgnore(val.value())) {
       return ValidationResult.EMPTY;
     }
     List<Violation> violations = new ArrayList<>();

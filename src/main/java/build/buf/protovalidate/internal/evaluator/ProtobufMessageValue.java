@@ -44,8 +44,8 @@ public final class ProtobufMessageValue implements Value {
   }
 
   @Override
-  public <T> T value(Class<T> clazz) {
-    return clazz.cast(((ProtobufMessageLike) value).getMessage());
+  public Object value() {
+    return ((ProtobufMessageLike) value).getMessage();
   }
 
   @Override
@@ -60,7 +60,7 @@ public final class ProtobufMessageValue implements Value {
 
   @Override
   public int enumValue() {
-    return value(Descriptors.EnumValueDescriptor.class).getNumber();
+    return ((Descriptors.EnumValueDescriptor) value).getNumber();
   }
 
   @Override
