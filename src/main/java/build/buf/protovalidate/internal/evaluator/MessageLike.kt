@@ -68,6 +68,16 @@ class ProtoktMessageLike(
         }
     }
 
+    // todo: protokt needs to track presence of scalars with a private backing field
+    /*
+        class Foo(
+            private val _possiblyNotThere: Int?
+        ) {
+            // presence tracking via checking property `_possiblyNotThere`.
+            // idk what happens on later JDKs if the backing property is null
+            val possiblyNotThere = _possiblyNotThere ?: 0
+        }
+     */
     override fun hasField(field: FieldDescriptor) =
         (getStandardField(field) ?: getOneofField(field)) != null
 
