@@ -79,9 +79,7 @@ class FieldEvaluator implements Evaluator {
     if (ignoreEmpty && !hasField) {
       return ValidationResult.EMPTY;
     }
-    Object fieldValue = message.getField(descriptor);
-    ValidationResult evalResult =
-        valueEvaluator.evaluate(message.newObjectValue(descriptor, fieldValue), failFast);
+    ValidationResult evalResult = valueEvaluator.evaluate(message.getField(descriptor), failFast);
     List<Violation> violations =
         ErrorPathUtils.prefixErrorPaths(evalResult.getViolations(), "%s", descriptor.getName());
     return new ValidationResult(violations);

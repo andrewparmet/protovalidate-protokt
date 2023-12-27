@@ -59,7 +59,16 @@ public final class ProtobufObjectValue implements Value {
   }
 
   @Override
-  public Object bindingValue() {
+  public <T> T jvmValue(Class<T> clazz) {
+    if (value instanceof Descriptors.EnumValueDescriptor) {
+      return clazz.cast(((Descriptors.EnumValueDescriptor) value).getNumber());
+    } else {
+      return clazz.cast(value);
+    }
+  }
+
+  @Override
+  public Object celValue() {
     if (value instanceof Descriptors.EnumValueDescriptor) {
       return ((Descriptors.EnumValueDescriptor) value).getNumber();
     }

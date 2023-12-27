@@ -18,6 +18,7 @@ import com.google.protobuf.Message;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * The {@link build.buf.protovalidate.internal.evaluator.Value} type that contains a {@link
@@ -25,8 +26,7 @@ import java.util.Map;
  */
 public final class ProtobufMessageValue implements Value {
 
-  /** Object type since the object type is inferred from the field descriptor. */
-  private final Object value;
+  private final ProtobufMessageLike value;
 
   /**
    * Constructs a {@link ProtobufMessageValue} with the provided message value.
@@ -39,12 +39,18 @@ public final class ProtobufMessageValue implements Value {
 
   @Override
   public MessageLike messageValue() {
-    return (MessageLike) value;
+    return value;
+  }
+
+  @Nullable
+  @Override
+  public <T> T jvmValue(Class<T> clazz) {
+    return null;
   }
 
   @Override
-  public Object bindingValue() {
-    return ((ProtobufMessageLike) value).getMessage();
+  public Object celValue() {
+    return value.getMessage();
   }
 
   @Override

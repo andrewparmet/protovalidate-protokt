@@ -139,7 +139,7 @@ tasks.register<Exec>("downloadConformance") {
         bufCLIPath,
         "export",
         "buf.build/bufbuild/protovalidate-testing:${project.findProperty("protovalidate.version")}",
-        "--output=build/protos"
+        "--output=build/protos",
     )
 }
 

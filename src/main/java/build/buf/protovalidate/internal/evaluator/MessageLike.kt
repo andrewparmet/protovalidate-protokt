@@ -22,23 +22,18 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.isSubclassOf
 
 interface MessageLike {
-    fun newObjectValue(fieldDescriptor: FieldDescriptor, fieldValue: Any): Value
-
     fun getRepeatedFieldCount(field: FieldDescriptor): Int
 
     fun hasField(field: FieldDescriptor): Boolean
 
     fun hasField(oneof: OneofDescriptor): Boolean
 
-    fun getField(field: FieldDescriptor): Any
+    fun getField(field: FieldDescriptor): Value
 }
 
 class ProtobufMessageLike(
     val message: Message
 ) : MessageLike {
-    override fun newObjectValue(fieldDescriptor: FieldDescriptor, fieldValue: Any) =
-        ProtobufObjectValue(fieldDescriptor, fieldValue)
-
     override fun getRepeatedFieldCount(field: FieldDescriptor) =
         message.getRepeatedFieldCount(field)
 
@@ -49,7 +44,7 @@ class ProtobufMessageLike(
         message.getOneofFieldDescriptor(oneof) != null
 
     override fun getField(field: FieldDescriptor) =
-        message.getField(field)
+        ProtobufObjectValue(field, message.getField(field))
 }
 
 // todo: cache field lookup paths for message class/descriptor pairs
@@ -58,9 +53,6 @@ class ProtoktMessageLike(
     val message: KtMessage,
     private val descriptorsByFullTypeName: Map<String, Descriptor>
 ) : MessageLike {
-    override fun newObjectValue(fieldDescriptor: FieldDescriptor, fieldValue: Any) =
-        ProtoktObjectValue(fieldDescriptor, fieldValue, descriptorsByFullTypeName)
-
     override fun getRepeatedFieldCount(field: FieldDescriptor): Int {
         val value = getTopLevelFieldGetter<Any>(field)!!.get(message)
         return if (value is List<*>) {
@@ -152,7 +144,7 @@ class ProtoktMessageLike(
     }
 
     override fun getField(field: FieldDescriptor) =
-        getStandardField(field) ?: getOneofField(field)!!
+        ProtoktObjectValue(field, getStandardField(field) ?: getOneofField(field)!!, descriptorsByFullTypeName)
 
     private fun <T> getTopLevelFieldGetter(fieldDescriptor: FieldDescriptor): KProperty1<KtMessage, T>? =
         getTopLevelFieldGetters<T>(message::class, fieldDescriptor.number::equals).singleOrNull()
@@ -185,8 +177,11 @@ class ProtoktMessageValue(
     override fun mapValue() =
         emptyMap<Value, Value>()
 
-    override fun bindingValue() =
+    override fun celValue() =
         dynamic(message.message, descriptorsByFullTypeName)
+
+    override fun <T : Any?> jvmValue(clazz: Class<T>) =
+        null
 }
 
 class ProtoktObjectValue(
@@ -222,12 +217,15 @@ class ProtoktObjectValue(
         }
     }
 
-    override fun bindingValue() =
+    override fun celValue() =
         when (value) {
             is KtEnum -> value.value
             is UInt -> ULong.valueOf(value.toLong())
             is kotlin.ULong -> ULong.valueOf(value.toLong())
+
+            // todo: support Bytes in CEL
             is Bytes -> ByteString.copyFrom(value.asReadOnlyBuffer())
+
             is Timestamp -> com.google.protobuf.Timestamp.newBuilder().setSeconds(value.seconds).setNanos(value.nanos).build()
             is Duration -> com.google.protobuf.Duration.newBuilder().setSeconds(value.seconds).setNanos(value.nanos).build()
             is KtMessage -> dynamic(value, descriptorsByFullTypeName)
@@ -235,6 +233,16 @@ class ProtoktObjectValue(
             // pray
             else -> value
         }
+
+    override fun <T : Any> jvmValue(clazz: Class<T>): T =
+        when (value) {
+            is KtEnum -> value.value
+            is UInt -> value.toInt()
+            is kotlin.ULong -> value.toLong()
+
+            // pray
+            else -> value
+        }.let(clazz::cast)
 }
 
 // todo: implement protokt support for CEL

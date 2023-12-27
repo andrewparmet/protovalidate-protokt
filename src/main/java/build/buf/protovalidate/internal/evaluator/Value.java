@@ -49,5 +49,21 @@ public interface Value {
    */
   Map<Value, Value> mapValue();
 
-  Object bindingValue();
+  /**
+   * Get the underlying value as it should be provided to CEL.
+   *
+   * @return The underlying value as a CEL-compatible type.
+   */
+  Object celValue();
+
+  /**
+   * Get the underlying value and cast it to the class type, which will be a type checkable
+   * internally by protovalidate-java.
+   *
+   * @param clazz The inferred class.
+   * @return The value cast to the inferred class type.
+   * @param <T> The class type.
+   */
+  @Nullable
+  <T> T jvmValue(Class<T> clazz);
 }

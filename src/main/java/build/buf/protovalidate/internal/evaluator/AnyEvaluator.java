@@ -49,7 +49,7 @@ class AnyEvaluator implements Evaluator {
       return ValidationResult.EMPTY;
     }
     List<Violation> violationList = new ArrayList<>();
-    String typeURL = (String) anyValue.getField(typeURLDescriptor);
+    String typeURL = anyValue.getField(typeURLDescriptor).jvmValue(String.class);
     if (!in.isEmpty() && !in.contains(typeURL)) {
       Violation violation =
           Violation.newBuilder()
