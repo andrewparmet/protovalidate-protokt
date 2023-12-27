@@ -1,7 +1,6 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.google.protobuf.gradle.ProtobufExtract
 import net.ltgt.gradle.errorprone.errorprone
-import protokt.v1.gradle.ProtoktExtension
 
 plugins {
     `version-catalog`
@@ -10,16 +9,11 @@ plugins {
     java
     alias(libs.plugins.errorprone)
     id("org.jetbrains.kotlin.jvm") version "1.9.20"
+    id("com.toasttab.protokt") version "1.0.0-beta.1"
 }
 
-apply(plugin = "com.toasttab.protokt")
-
-configure<ProtoktExtension> {
+protokt {
     formatOutput = false
-}
-
-repositories {
-    mavenLocal()
 }
 
 val conformanceCLIFile = project.layout.buildDirectory.file("gobin/protovalidate-conformance").get().asFile

@@ -14,10 +14,6 @@ plugins {
     id("org.jetbrains.kotlin.jvm") version "1.9.20"
 }
 
-repositories {
-    mavenLocal()
-}
-
 kotlin {
     compilerOptions {
         target { jvmTarget = JvmTarget.JVM_1_8 }
@@ -186,14 +182,9 @@ tasks.withType<GenerateModuleMetadata> {
 }
 
 buildscript {
-    repositories {
-        mavenLocal()
-    }
-
     dependencies {
         classpath(libs.maven.plugin)
         classpath(libs.spotless)
-        classpath("com.toasttab.protokt:protokt-gradle-plugin:1.0.0-beta.1-SNAPSHOT")
     }
 }
 
@@ -303,7 +294,7 @@ dependencies {
     implementation(libs.ipaddress)
     implementation(libs.jakarta.mail.api)
     implementation(kotlin("reflect"))
-    implementation("com.toasttab.protokt:protokt-core:1.0.0-beta.1-SNAPSHOT")
+    implementation("com.toasttab.protokt:protokt-core:1.0.0-beta.1")
 
     testImplementation(libs.assertj)
     testImplementation(platform(libs.junit.bom))
