@@ -136,6 +136,17 @@ tasks.register<Exec>("generateConformance") {
     )
 }
 
+tasks.register<Exec>("downloadConformance") {
+    dependsOn("installBuf")
+    description = "Downloads protos for the bufbuild/protovalidate-testing module to conformance/build/protos."
+    commandLine(
+        bufCLIPath,
+        "export",
+        "buf.build/bufbuild/protovalidate-testing:${project.findProperty("protovalidate.version")}",
+        "--output=build/protos"
+    )
+}
+
 tasks.register("generate") {
     description = "Generates sources with buf generate and buf export."
     dependsOn(

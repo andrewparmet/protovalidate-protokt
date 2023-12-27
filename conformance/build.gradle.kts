@@ -1,4 +1,5 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
+import com.google.protobuf.gradle.ProtobufExtract
 import net.ltgt.gradle.errorprone.errorprone
 import protokt.v1.gradle.ProtoktExtension
 
@@ -101,5 +102,9 @@ dependencies {
 
     errorprone(libs.errorprone)
 
-    "protobuf"(rootProject.files("src/main/resources"))
+    "protobuf"(rootProject.files("build/protos"))
+}
+
+tasks.withType<ProtobufExtract> {
+    dependsOn(rootProject.tasks.named("downloadConformance"))
 }
