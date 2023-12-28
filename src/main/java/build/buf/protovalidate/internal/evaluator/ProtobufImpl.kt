@@ -14,15 +14,22 @@
 
 package build.buf.protovalidate.internal.evaluator
 
+import com.google.protobuf.Descriptors
 import com.google.protobuf.Descriptors.FieldDescriptor
-import com.google.protobuf.Descriptors.OneofDescriptor
+import com.google.protobuf.Message
 
-interface MessageLike {
-    fun getRepeatedFieldCount(field: FieldDescriptor): Int
+class ProtobufMessageLike(
+    val message: Message
+) : MessageLike {
+    override fun getRepeatedFieldCount(field: FieldDescriptor) =
+        message.getRepeatedFieldCount(field)
 
-    fun hasField(field: FieldDescriptor): Boolean
+    override fun hasField(field: FieldDescriptor) =
+        message.hasField(field)
 
-    fun hasField(oneof: OneofDescriptor): Boolean
+    override fun hasField(oneof: Descriptors.OneofDescriptor) =
+        message.getOneofFieldDescriptor(oneof) != null
 
-    fun getField(field: FieldDescriptor): Value
+    override fun getField(field: FieldDescriptor) =
+        ProtobufObjectValue(field, message.getField(field))
 }
