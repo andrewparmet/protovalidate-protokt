@@ -14,6 +14,8 @@
 
 package build.buf.protovalidate.internal.evaluator
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
 import com.google.protobuf.ByteString
 import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.Descriptors.FieldDescriptor
@@ -35,6 +37,8 @@ import protokt.v1.VarintVal
 import protokt.v1.google.protobuf.Duration
 import protokt.v1.google.protobuf.Timestamp
 import java.nio.charset.StandardCharsets
+import java.util.SortedMap
+import java.util.TreeMap
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
@@ -46,6 +50,54 @@ import kotlin.reflect.full.isSubclassOf
 // private val gettersByMessageAndDescriptor =
 //    ConcurrentHashMap<Pair<KClass<out KtMessage>, FieldDescriptor>, KProperty1<out KtMessage, Any>>()
 
+object ProtoktReflect {
+    private data class MessageField(
+        val messageClass: KClass<out KtMessage>,
+        val field: FieldDescriptor
+    )
+
+    private sealed interface PropertyLookup
+
+    data object NotFound : PropertyLookup
+
+    class Found(
+        val getter: KProperty1<*, *>
+    ) : PropertyLookup
+
+    private val topLevelGettersByClass =
+        CacheBuilder.newBuilder()
+            .build(
+                object : CacheLoader<KClass<*>, SortedMap<Int, KProperty1<*, *>>>() {
+                    override fun load(key: KClass<*>): SortedMap<Int, KProperty1<*, *>> =
+                        key
+                            .declaredMemberProperties
+                            .map { it.findAnnotation<KtProperty>()?.number to it }
+                            .filter { (number, _) -> number != null }
+                            .associateTo(TreeMap()) { it.first!! to it.second }
+                }
+            )
+
+    private val topLevelGettersByMessageField =
+        CacheBuilder.newBuilder()
+            .build(
+                object : CacheLoader<MessageField, PropertyLookup>() {
+                    override fun load(key: MessageField): PropertyLookup =
+                        topLevelGettersByClass[key.messageClass][key.field.number]?.let(::Found) ?: NotFound
+                }
+            )
+
+    fun getTopLevelGetters(klass: KClass<*>) =
+        topLevelGettersByClass[klass]
+
+    fun <T> getTopLevelField(message: KtMessage, field: FieldDescriptor) =
+        topLevelGettersByMessageField[MessageField(message::class, field)]
+            .let {
+                @Suppress("UNCHECKED_CAST")
+                (it as? Found)?.getter as? KProperty1<KtMessage, T>
+            }
+            ?.get(message)
+}
+
 // todo: cache field lookup paths for message class/descriptor pairs
 // todo: or just cache general reflection info globally
 class ProtoktMessageLike(
@@ -53,7 +105,7 @@ class ProtoktMessageLike(
     private val descriptorsByFullTypeName: Map<String, Descriptor>
 ) : MessageLike {
     override fun getRepeatedFieldCount(field: FieldDescriptor): Int {
-        val value = getTopLevelFieldGetter<Any>(field)?.get(message) ?: (getUnknownField(field) as List<*>)
+        val value = ProtoktReflect.getTopLevelField<Any>(message, field) ?: (getUnknownField(field) as List<*>)
         return if (value is List<*>) {
             value.size
         } else {
@@ -88,7 +140,10 @@ class ProtoktMessageLike(
         val classWithProperty =
             oneofSealedClasses.single { sealedClass ->
                 val dataClasses = sealedClass.nestedClasses
-                dataClasses.flatMap { getTopLevelFieldGetters<Any>(it, fieldNumbers::contains) }.any()
+                dataClasses.flatMap {
+                    val gettersByNumber = ProtoktReflect.getTopLevelGetters(it)
+                    fieldNumbers.mapNotNull(gettersByNumber::get)
+                }.any()
             }
 
         return message::class
@@ -102,7 +157,7 @@ class ProtoktMessageLike(
     }
 
     private fun getStandardField(field: FieldDescriptor) =
-        getTopLevelFieldGetter<Any?>(field)?.get(message)
+        ProtoktReflect.getTopLevelField<Any?>(message, field)
 
     private fun getOneofField(field: FieldDescriptor): Any? {
         val oneofSealedClasses =
@@ -113,7 +168,7 @@ class ProtoktMessageLike(
         val classWithProperty =
             oneofSealedClasses.firstOrNull { sealedClass ->
                 val dataClasses = sealedClass.nestedClasses
-                dataClasses.flatMap { getTopLevelFieldGetters<Any>(it, field.number::equals) }.any()
+                dataClasses.mapNotNull { ProtoktReflect.getTopLevelGetters(it)[field.number] }.any()
             } ?: return null
 
         val dataClassInstance =
@@ -203,21 +258,6 @@ class ProtoktMessageLike(
             getStandardField(field) ?: getOneofField(field) ?: getUnknownField(field)!!,
             descriptorsByFullTypeName
         )
-
-    private fun <T> getTopLevelFieldGetter(fieldDescriptor: FieldDescriptor): KProperty1<KtMessage, T>? =
-        getTopLevelFieldGetters<T>(message::class, fieldDescriptor.number::equals).singleOrNull()
-
-    private fun <T> getTopLevelFieldGetters(klass: KClass<*>, condition: (Int) -> Boolean): List<KProperty1<KtMessage, T>> =
-        klass
-            .declaredMemberProperties
-            .filter {
-                val annotation = it.findAnnotation<KtProperty>()
-                annotation != null && condition(annotation.number)
-            }
-            .map {
-                @Suppress("UNCHECKED_CAST")
-                it as KProperty1<KtMessage, T>
-            }
 }
 
 class ProtoktMessageValue(
