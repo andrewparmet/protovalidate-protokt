@@ -54,7 +54,13 @@ tasks.withType<Javadoc> {
 }
 
 application {
-    mainClass.set("build.buf.protovalidate.conformance.Main")
+    mainClass.set(
+        if (project.hasProperty("conformance-protokt")) {
+            "build.buf.protovalidate.conformance.Main2"
+        } else {
+            "build.buf.protovalidate.conformance.Main"
+        }
+    )
 }
 
 tasks {

@@ -41,6 +41,11 @@ import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.isSubclassOf
 
+// todo: guava caches with expiration; one per call that uses reflection.
+// todo: utilities that remove all need for casting to access the caches
+// private val gettersByMessageAndDescriptor =
+//    ConcurrentHashMap<Pair<KClass<out KtMessage>, FieldDescriptor>, KProperty1<out KtMessage, Any>>()
+
 // todo: cache field lookup paths for message class/descriptor pairs
 // todo: or just cache general reflection info globally
 class ProtoktMessageLike(
