@@ -59,7 +59,7 @@ application {
             "build.buf.protovalidate.conformance.Main2"
         } else {
             "build.buf.protovalidate.conformance.Main"
-        }
+        },
     )
 }
 
