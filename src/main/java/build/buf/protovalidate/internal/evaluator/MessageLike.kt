@@ -9,12 +9,18 @@ import com.google.protobuf.DynamicMessage
 import com.google.protobuf.Message
 import org.projectnessie.cel.common.ULong
 import protokt.v1.Bytes
+import protokt.v1.Fixed32Val
+import protokt.v1.Fixed64Val
 import protokt.v1.KtEnum
 import protokt.v1.KtGeneratedMessage
 import protokt.v1.KtMessage
 import protokt.v1.KtProperty
+import protokt.v1.LengthDelimitedVal
+import protokt.v1.UnknownFieldSet
+import protokt.v1.VarintVal
 import protokt.v1.google.protobuf.Duration
 import protokt.v1.google.protobuf.Timestamp
+import java.nio.charset.StandardCharsets
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
@@ -54,7 +60,7 @@ class ProtoktMessageLike(
     private val descriptorsByFullTypeName: Map<String, Descriptor>
 ) : MessageLike {
     override fun getRepeatedFieldCount(field: FieldDescriptor): Int {
-        val value = getTopLevelFieldGetter<Any>(field)!!.get(message)
+        val value = getTopLevelFieldGetter<Any>(field)?.get(message) ?: (getUnknownField(field) as List<*>)
         return if (value is List<*>) {
             value.size
         } else {
@@ -143,8 +149,67 @@ class ProtoktMessageLike(
         }
     }
 
+    private fun getUnknownField(field: FieldDescriptor) =
+        message::class
+            .declaredMemberProperties
+            .firstOrNull { it.returnType.classifier == UnknownFieldSet::class }
+            .let {
+                @Suppress("UNCHECKED_CAST")
+                it as KProperty1<KtMessage, UnknownFieldSet>
+            }
+            .get(message)
+            .unknownFields[field.number.toUInt()]
+            ?.let { value ->
+                when {
+                    value.varint.isNotEmpty() ->
+                        value.varint
+                            .map(VarintVal::value)
+                            .map {
+                                if (field.type != Type.UINT64) {
+                                    it.toLong()
+                                } else {
+                                    it
+                                }
+                            }
+
+                    value.fixed32.isNotEmpty() ->
+                        value.fixed32.map(Fixed32Val::value)
+
+                    value.fixed64.isNotEmpty() ->
+                        value.fixed64.map(Fixed64Val::value)
+
+                    value.lengthDelimited.isNotEmpty() ->
+                        value.lengthDelimited
+                            .map(LengthDelimitedVal::value)
+                            .map {
+                                if (field.type == Type.STRING) {
+                                    StandardCharsets.UTF_8.decode(it.asReadOnlyBuffer()).toString()
+                                } else {
+                                    it
+                                }
+                            }
+
+                    else -> error("unknown field for field number ${field.number} existed but was empty")
+                }
+            }
+            .let {
+                if (field.isRepeated) {
+                    if (field.isMapField) {
+                        it ?: emptyMap<Any, Any>()
+                    } else {
+                        it ?: emptyList<Any>()
+                    }
+                } else {
+                    it?.first()
+                }
+            }
+
     override fun getField(field: FieldDescriptor) =
-        ProtoktObjectValue(field, getStandardField(field) ?: getOneofField(field)!!, descriptorsByFullTypeName)
+        ProtoktObjectValue(
+            field,
+            getStandardField(field) ?: getOneofField(field) ?: getUnknownField(field)!!,
+            descriptorsByFullTypeName
+        )
 
     private fun <T> getTopLevelFieldGetter(fieldDescriptor: FieldDescriptor): KProperty1<KtMessage, T>? =
         getTopLevelFieldGetters<T>(message::class, fieldDescriptor.number::equals).singleOrNull()
