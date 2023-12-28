@@ -86,8 +86,9 @@ object ProtoktReflect {
                 }
             )
 
-    fun getTopLevelGetters(klass: KClass<*>) =
-        topLevelGettersByClass[klass]
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Any> getTopLevelGetters(klass: KClass<out T>): Map<Int, KProperty1<out T, *>> =
+        topLevelGettersByClass[klass] as Map<Int, KProperty1<out T, *>>
 
     fun <T> getTopLevelField(message: KtMessage, field: FieldDescriptor) =
         topLevelGettersByMessageField[MessageField(message::class, field)]
@@ -96,6 +97,52 @@ object ProtoktReflect {
                 (it as? Found)?.getter as? KProperty1<KtMessage, T>
             }
             ?.get(message)
+
+    private data class SealedClassTypeAndGetter(
+        val klass: KClass<*>,
+        val number: Int
+    )
+
+    private val gettersByNumber =
+        CacheBuilder.newBuilder()
+            .build(
+                object : CacheLoader<KClass<out KtMessage>, Map<Int, KProperty1<out KtMessage, *>>>() {
+                    override fun load(key: KClass<out KtMessage>): Map<Int, KProperty1<out KtMessage, *>> =
+                        loadAll(listOf(key)).values.single()
+
+                    override fun loadAll(keys: Iterable<KClass<out KtMessage>>) =
+                        keys.associateWith(::gettersForClass)
+
+                    private fun gettersForClass(messageClass: KClass<out KtMessage>) =
+                        getTopLevelGetters(messageClass) + oneofGetters(messageClass)
+
+                    private fun oneofGetters(messageClass: KClass<out KtMessage>): Map<Int, KProperty1<out KtMessage, *>> {
+                        val oneofSealedClasses =
+                            messageClass
+                                .nestedClasses
+                                .filter { it.isSealed && !it.isSubclassOf(KtEnum::class) }
+
+                        val sealedClassPropertyGetters =
+                            oneofSealedClasses.flatMap { sealedClass ->
+                                sealedClass.nestedClasses.map {
+                                    SealedClassTypeAndGetter(sealedClass, getTopLevelGetters(it).keys.single())
+                                }
+                            }
+
+                        return sealedClassPropertyGetters.associate { (klass, number) ->
+                            Pair(
+                                number,
+                                messageClass.declaredMemberProperties
+                                    .single { it.returnType.classifier == klass }
+                            )
+                        }
+                    }
+                }
+            )
+
+    @Suppress("UNCHECKED_CAST")
+    fun getGetters(klass: KClass<out KtMessage>): Map<Int, KProperty1<KtMessage, *>> =
+        gettersByNumber[klass] as Map<Int, KProperty1<KtMessage, *>>
 }
 
 // todo: cache field lookup paths for message class/descriptor pairs
@@ -128,58 +175,16 @@ class ProtoktMessageLike(
     override fun hasField(field: FieldDescriptor) =
         (getStandardField(field) ?: getOneofField(field)) != null
 
-    // todo: can maybe be unified with getOneofField
-    override fun hasField(oneof: OneofDescriptor): Boolean {
-        val fieldNumbers = oneof.fields.map { it.number }.toSet()
-
-        val oneofSealedClasses =
-            message::class
-                .nestedClasses
-                .filter { it.isSealed && !it.isSubclassOf(KtEnum::class) }
-
-        val classWithProperty =
-            oneofSealedClasses.single { sealedClass ->
-                val dataClasses = sealedClass.nestedClasses
-                dataClasses.flatMap {
-                    val gettersByNumber = ProtoktReflect.getTopLevelGetters(it)
-                    fieldNumbers.mapNotNull(gettersByNumber::get)
-                }.any()
-            }
-
-        return message::class
-            .declaredMemberProperties
-            .single { it.returnType.classifier == classWithProperty }
-            .let {
-                @Suppress("UNCHECKED_CAST")
-                it as KProperty1<KtMessage, Any?>
-            }
-            .get(message) != null
-    }
-
     private fun getStandardField(field: FieldDescriptor) =
         ProtoktReflect.getTopLevelField<Any?>(message, field)
 
+    override fun hasField(oneof: OneofDescriptor): Boolean {
+        val getters = ProtoktReflect.getGetters(message::class)
+        return oneof.fields.map { getters.getValue(it.number) }.any { it.get(message) != null }
+    }
+
     private fun getOneofField(field: FieldDescriptor): Any? {
-        val oneofSealedClasses =
-            message::class
-                .nestedClasses
-                .filter { it.isSealed && !it.isSubclassOf(KtEnum::class) }
-
-        val classWithProperty =
-            oneofSealedClasses.firstOrNull { sealedClass ->
-                val dataClasses = sealedClass.nestedClasses
-                dataClasses.mapNotNull { ProtoktReflect.getTopLevelGetters(it)[field.number] }.any()
-            } ?: return null
-
-        val dataClassInstance =
-            message::class
-                .declaredMemberProperties
-                .single { it.returnType.classifier == classWithProperty }
-                .let {
-                    @Suppress("UNCHECKED_CAST")
-                    it as KProperty1<KtMessage, Any?>
-                }
-                .get(message) ?: return null
+        val dataClassInstance = ProtoktReflect.getGetters(message::class).getValue(field.number).get(message) ?: return null
 
         val dataClassProperty =
             dataClassInstance::class
