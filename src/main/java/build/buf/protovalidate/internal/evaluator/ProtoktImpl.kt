@@ -233,7 +233,7 @@ class ProtoktMessageValue(
     override fun celValue() =
         dynamic(message.message, descriptorsByFullTypeName)
 
-    override fun <T : Any?> jvmValue(clazz: Class<T>) =
+    override fun <T : Any> jvmValue(clazz: Class<T>) =
         null
 }
 
