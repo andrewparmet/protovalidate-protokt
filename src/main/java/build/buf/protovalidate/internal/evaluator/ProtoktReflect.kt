@@ -151,5 +151,5 @@ object ProtoktReflect {
             }
 
     fun getField(message: KtMessage, field: FieldDescriptor): Any? =
-        reflectedGettersByClass[message::class].invoke(field, message)
+        reflectedGettersByClass[message::class](field, message)
 }
