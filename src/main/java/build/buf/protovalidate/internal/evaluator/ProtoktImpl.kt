@@ -40,6 +40,7 @@ import java.nio.charset.StandardCharsets
 import java.util.SortedMap
 import java.util.TreeMap
 import kotlin.reflect.KClass
+import kotlin.reflect.KClassifier
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
@@ -61,19 +62,37 @@ object ProtoktReflect {
     data object NotFound : PropertyLookup
 
     class Found(
-        val getter: KProperty1<*, *>
+        val getter: PropertyGetter
     ) : PropertyLookup
+
+    data class PropertyGetter(
+        val returnType: KClassifier,
+        val getter: (Any) -> Any?
+    )
 
     private val topLevelGettersByClass =
         CacheBuilder.newBuilder()
             .build(
-                object : CacheLoader<KClass<*>, SortedMap<Int, KProperty1<*, *>>>() {
-                    override fun load(key: KClass<*>): SortedMap<Int, KProperty1<*, *>> =
+                object : CacheLoader<KClass<*>, SortedMap<Int, PropertyGetter>>() {
+                    override fun load(key: KClass<*>): SortedMap<Int, PropertyGetter> =
                         key
                             .declaredMemberProperties
                             .map { it.findAnnotation<KtProperty>()?.number to it }
                             .filter { (number, _) -> number != null }
-                            .associateTo(TreeMap()) { it.first!! to it.second }
+                            .associateTo(TreeMap()) {
+                                it.first!! to
+                                    PropertyGetter(
+                                        it.second.returnType.classifier!!,
+                                        { msg ->
+                                            try {
+                                                @Suppress("UNCHECKED_CAST")
+                                                (it.second as KProperty1<Any, *>).get(msg)
+                                            } catch (ex: Exception) {
+                                                throw ex
+                                            }
+                                        }
+                                    )
+                            }
                 }
             )
 
@@ -86,63 +105,82 @@ object ProtoktReflect {
                 }
             )
 
-    @Suppress("UNCHECKED_CAST")
-    fun <T : Any> getTopLevelGetters(klass: KClass<out T>): Map<Int, KProperty1<out T, *>> =
-        topLevelGettersByClass[klass] as Map<Int, KProperty1<out T, *>>
+    fun getTopLevelGetters(klass: KClass<*>): Map<Int, PropertyGetter> =
+        topLevelGettersByClass[klass]
 
     fun <T> getTopLevelField(message: KtMessage, field: FieldDescriptor) =
         topLevelGettersByMessageField[MessageField(message::class, field)]
-            .let {
-                @Suppress("UNCHECKED_CAST")
-                (it as? Found)?.getter as? KProperty1<KtMessage, T>
-            }
-            ?.get(message)
+            .let { (it as? Found)?.getter }
+            ?.getter
+            ?.invoke(message)
 
-    private data class SealedClassTypeAndGetter(
-        val klass: KClass<*>,
-        val number: Int
+    private data class SealedClassAndGetter(
+        val oneofPropertyGetter: KProperty1<KtMessage, *>,
+        val number: Int,
+        val getterFromSealedClassSubtype: PropertyGetter
     )
 
     private val gettersByNumber =
         CacheBuilder.newBuilder()
             .build(
-                object : CacheLoader<KClass<out KtMessage>, Map<Int, KProperty1<out KtMessage, *>>>() {
-                    override fun load(key: KClass<out KtMessage>): Map<Int, KProperty1<out KtMessage, *>> =
+                object : CacheLoader<KClass<out KtMessage>, Map<Int, (KtMessage, Int) -> Any?>>() {
+                    override fun load(key: KClass<out KtMessage>): Map<Int, (KtMessage, Int) -> Any?> =
                         loadAll(listOf(key)).values.single()
 
                     override fun loadAll(keys: Iterable<KClass<out KtMessage>>) =
                         keys.associateWith(::gettersForClass)
 
                     private fun gettersForClass(messageClass: KClass<out KtMessage>) =
-                        getTopLevelGetters(messageClass) + oneofGetters(messageClass)
+                        getTopLevelGetters(messageClass).mapValues { (_, v) -> { msg: KtMessage, _: Int -> v.getter(msg) } } + oneofGetters(messageClass)
 
-                    private fun oneofGetters(messageClass: KClass<out KtMessage>): Map<Int, KProperty1<out KtMessage, *>> {
-                        val oneofSealedClasses =
+                    private fun oneofGetters(messageClass: KClass<out KtMessage>): Map<Int, (KtMessage, Int) -> Any?> {
+                        val oneofPropertiesSealedClasses =
                             messageClass
                                 .nestedClasses
                                 .filter { it.isSealed && !it.isSubclassOf(KtEnum::class) }
 
-                        val sealedClassPropertyGetters =
-                            oneofSealedClasses.flatMap { sealedClass ->
+                        val oneofPropertySubtypeGetters =
+                            oneofPropertiesSealedClasses.flatMap { sealedClass ->
+                                val oneofPropertyGetter =
+                                    messageClass.declaredMemberProperties
+                                        .single { it.returnType.classifier == sealedClass }
+                                        .let {
+                                            @Suppress("UNCHECKED_CAST")
+                                            it as KProperty1<KtMessage, *>
+                                        }
+
                                 sealedClass.nestedClasses.map {
-                                    SealedClassTypeAndGetter(sealedClass, getTopLevelGetters(it).keys.single())
+                                    val (number, getterFromSubtype) = getTopLevelGetters(it).entries.single()
+                                    SealedClassAndGetter(
+                                        oneofPropertyGetter,
+                                        number,
+                                        PropertyGetter(it, getterFromSubtype.getter)
+                                    )
                                 }
                             }
 
-                        return sealedClassPropertyGetters.associate { (klass, number) ->
-                            Pair(
-                                number,
-                                messageClass.declaredMemberProperties
-                                    .single { it.returnType.classifier == klass }
-                            )
+                        return oneofPropertySubtypeGetters.associate { (oneofPropertyGetter, number, getterFromSubtype) ->
+                            data class PropGetter(
+                                val dataClassGetter: KProperty1<KtMessage, *>
+                            ) : (KtMessage, Int) -> Any? {
+                                override fun invoke(msg: KtMessage, requestedNumber: Int): Any? {
+                                    val oneofProperty = oneofPropertyGetter.get(msg)
+                                    return if ((getterFromSubtype.returnType as KClass<*>).isInstance(oneofProperty)) {
+                                        getterFromSubtype.getter(oneofProperty!!)
+                                    } else {
+                                        null
+                                    }
+                                }
+                            }
+
+                            number to PropGetter(oneofPropertyGetter)
                         }
                     }
                 }
             )
 
-    @Suppress("UNCHECKED_CAST")
-    fun getGetters(klass: KClass<out KtMessage>): Map<Int, KProperty1<KtMessage, *>> =
-        gettersByNumber[klass] as Map<Int, KProperty1<KtMessage, *>>
+    fun getGetters(klass: KClass<out KtMessage>): Map<Int, (KtMessage, Int) -> Any?> =
+        gettersByNumber[klass] as Map<Int, (KtMessage, Int) -> Any?>
 }
 
 // todo: cache field lookup paths for message class/descriptor pairs
@@ -180,12 +218,12 @@ class ProtoktMessageLike(
 
     override fun hasField(oneof: OneofDescriptor): Boolean {
         val getters = ProtoktReflect.getGetters(message::class)
-        return oneof.fields.map { getters.getValue(it.number) }.any { it.get(message) != null }
+        return oneof.fields.map { getters.getValue(it.number)(message, it.number) }.any { it != null }
     }
 
     private fun getOneofField(field: FieldDescriptor): Any? {
-        val dataClassInstance = ProtoktReflect.getGetters(message::class).getValue(field.number).get(message) ?: return null
-
+        return ProtoktReflect.getGetters(message::class).getValue(field.number)(message, field.number)
+/*
         val dataClassProperty =
             dataClassInstance::class
                 .declaredMemberProperties
@@ -199,8 +237,9 @@ class ProtoktMessageLike(
             dataClassProperty.get(dataClassInstance)
         } else {
             null
-        }
+        } */
     }
+
 
     private fun getUnknownField(field: FieldDescriptor) =
         message::class
