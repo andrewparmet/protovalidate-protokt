@@ -40,14 +40,14 @@ object ProtoktReflect {
                 object : CacheLoader<KClass<out KtMessage>, (FieldDescriptor, KtMessage) -> Any?>() {
                     override fun load(messageClass: KClass<out KtMessage>) =
                         { field: FieldDescriptor, message: KtMessage ->
-                            getTopLevelGetters(messageClass)(field, message)
-                                ?: oneofGetters(messageClass)(field, message)
+                            topLevelProperty(messageClass)(field, message)
+                                ?: oneofProperty(messageClass)(field, message)
                                 ?: getUnknownField(field, message)
                         }
                 }
             )
 
-    private fun getTopLevelGetters(klass: KClass<out KtMessage>): (FieldDescriptor, KtMessage) -> Any? {
+    private fun topLevelProperty(klass: KClass<out KtMessage>): (FieldDescriptor, KtMessage) -> Any? {
         val gettersByNumber = gettersByNumber<KtMessage>(klass)
         return { field, instance -> gettersByNumber[field.number]?.invoke(instance) }
     }
@@ -61,7 +61,7 @@ object ProtoktReflect {
                 number!! to getter as KProperty1<T, Any?>
             }
 
-    private fun oneofGetters(messageClass: KClass<out KtMessage>): (FieldDescriptor, KtMessage) -> Any? {
+    private fun oneofProperty(messageClass: KClass<out KtMessage>): (FieldDescriptor, KtMessage) -> Any? {
         val oneofPropertiesSealedClasses =
             messageClass
                 .nestedClasses
