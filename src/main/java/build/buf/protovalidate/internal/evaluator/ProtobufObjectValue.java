@@ -14,6 +14,7 @@
 
 package build.buf.protovalidate.internal.evaluator;
 
+import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import java.util.ArrayList;
@@ -104,14 +105,15 @@ public final class ProtobufObjectValue implements Value {
 
   @Override
   public Map<Value, Value> mapValue() {
-    @SuppressWarnings("unchecked")
-    List<Message> input =
-        value instanceof List ? (List<Message>) value : Collections.singletonList((Message) value);
+      List<AbstractMessage> input =
+          value instanceof List
+              ? (List<AbstractMessage>) value
+              : Collections.singletonList((AbstractMessage) value);
 
     Descriptors.FieldDescriptor keyDesc = fieldDescriptor.getMessageType().findFieldByNumber(1);
     Descriptors.FieldDescriptor valDesc = fieldDescriptor.getMessageType().findFieldByNumber(2);
     Map<Value, Value> out = new HashMap<>(input.size());
-    for (Message entry : input) {
+    for (AbstractMessage entry : input) {
       Object keyValue = entry.getField(keyDesc);
       Value keyJavaValue = new ProtobufObjectValue(keyDesc, keyValue);
 
