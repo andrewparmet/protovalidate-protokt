@@ -24,13 +24,11 @@ import protokt.v1.Bytes
 import protokt.v1.KtEnum
 import protokt.v1.KtGeneratedMessage
 import protokt.v1.KtMessage
-import protokt.v1.google.protobuf.Duration
-import protokt.v1.google.protobuf.Timestamp
 import kotlin.reflect.full.findAnnotation
 
 class ProtoktMessageLike(
     val message: KtMessage,
-    private val descriptorsByFullTypeName: Map<String, Descriptor>
+    internal val descriptorsByFullTypeName: Map<String, Descriptor>
 ) : MessageLike {
     override fun getRepeatedFieldCount(field: FieldDescriptor): Int {
         val value = ProtoktReflect.getField(message, field)
@@ -68,7 +66,7 @@ class ProtoktMessageValue(
         emptyMap<Value, Value>()
 
     override fun celValue() =
-        dynamic(message.message, descriptorsByFullTypeName)
+        dynamic(message)
 
     override fun <T : Any> jvmValue(clazz: Class<T>) =
         null
@@ -104,13 +102,10 @@ class ProtoktObjectValue(
             is KtEnum -> value.value
             is UInt -> ULong.valueOf(value.toLong())
             is kotlin.ULong -> ULong.valueOf(value.toLong())
+            is KtMessage -> dynamic(ProtoktMessageLike(value, descriptorsByFullTypeName))
 
             // todo: support Bytes in CEL
             is Bytes -> ByteString.copyFrom(value.asReadOnlyBuffer())
-
-            is Timestamp -> com.google.protobuf.Timestamp.newBuilder().setSeconds(value.seconds).setNanos(value.nanos).build()
-            is Duration -> com.google.protobuf.Duration.newBuilder().setSeconds(value.seconds).setNanos(value.nanos).build()
-            is KtMessage -> dynamic(value, descriptorsByFullTypeName)
 
             // pray
             else -> value
@@ -127,10 +122,31 @@ class ProtoktObjectValue(
         }.let(clazz::cast)
 }
 
-// todo: implement protokt support for CEL
-private fun dynamic(message: KtMessage, descriptorsByFullTypeName: Map<String, Descriptor>): Message {
-    System.err.println("dynamically rebuilding $message")
-    return DynamicMessage.newBuilder(descriptorsByFullTypeName.getValue(message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName))
-        .mergeFrom(message.serialize())
+private fun dynamic(message: ProtoktMessageLike): Message {
+    val descriptor =
+        message.descriptorsByFullTypeName
+            .getValue(message.message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName)
+
+    return DynamicMessage.newBuilder(descriptor)
+        .apply {
+            descriptor.fields.forEach { field ->
+                if (message.hasField(field)) {
+                    setField(
+                        field,
+                        message.getField(field).jvmValue(Any::class.java).let {
+                            when (field.type) {
+                                FieldDescriptor.Type.ENUM ->
+                                    field.enumType.findValueByNumber(it as Int)
+
+                                FieldDescriptor.Type.MESSAGE ->
+                                    dynamic(ProtoktMessageLike(it as KtMessage, message.descriptorsByFullTypeName))
+
+                                else -> it
+                            }
+                        }
+                    )
+                }
+            }
+        }
         .build()
 }
