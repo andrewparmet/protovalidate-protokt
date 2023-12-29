@@ -14,7 +14,6 @@
 
 package build.buf.protovalidate.internal.evaluator
 
-import com.google.protobuf.Descriptors
 import com.google.protobuf.Descriptors.FieldDescriptor
 import com.google.protobuf.Message
 
@@ -26,9 +25,6 @@ class ProtobufMessageLike(
 
     override fun hasField(field: FieldDescriptor) =
         message.hasField(field)
-
-    override fun hasField(oneof: Descriptors.OneofDescriptor) =
-        message.getOneofFieldDescriptor(oneof) != null
 
     override fun getField(field: FieldDescriptor) =
         ProtobufObjectValue(field, message.getField(field))

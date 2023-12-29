@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 import org.projectnessie.cel.common.ULong;
 
 /**
@@ -50,13 +49,9 @@ public final class ProtobufObjectValue implements Value {
     this.value = value;
   }
 
-  @Nullable
   @Override
   public MessageLike messageValue() {
-    if (fieldDescriptor.getType() == Descriptors.FieldDescriptor.Type.MESSAGE) {
-      return new ProtobufMessageLike((Message) value);
-    }
-    return null;
+    return new ProtobufMessageLike((Message) value);
   }
 
   @Override

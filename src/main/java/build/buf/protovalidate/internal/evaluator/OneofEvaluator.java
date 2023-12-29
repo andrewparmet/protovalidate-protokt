@@ -50,7 +50,8 @@ public class OneofEvaluator implements Evaluator {
     if (message == null) {
       return ValidationResult.EMPTY;
     }
-    if (required && !message.hasField(descriptor)) {
+    boolean hasField = descriptor.getFields().stream().anyMatch(message::hasField);
+    if (required && !hasField) {
       return new ValidationResult(
           Collections.singletonList(
               Violation.newBuilder()

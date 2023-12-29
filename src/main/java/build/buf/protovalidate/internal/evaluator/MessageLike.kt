@@ -15,14 +15,11 @@
 package build.buf.protovalidate.internal.evaluator
 
 import com.google.protobuf.Descriptors.FieldDescriptor
-import com.google.protobuf.Descriptors.OneofDescriptor
 
 interface MessageLike {
     fun getRepeatedFieldCount(field: FieldDescriptor): Int
 
     fun hasField(field: FieldDescriptor): Boolean
-
-    fun hasField(oneof: OneofDescriptor): Boolean
 
     fun getField(field: FieldDescriptor): Value
 }

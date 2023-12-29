@@ -30,7 +30,6 @@ public interface Value {
    * @return The underlying {@link Message} value. null if the underlying value is not a {@link
    *     Message} type.
    */
-  @Nullable
   MessageLike messageValue();
 
   /**

@@ -17,8 +17,6 @@ package build.buf.protovalidate.internal.evaluator
 import com.google.protobuf.ByteString
 import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.Descriptors.FieldDescriptor
-import com.google.protobuf.Descriptors.FieldDescriptor.Type
-import com.google.protobuf.Descriptors.OneofDescriptor
 import com.google.protobuf.DynamicMessage
 import com.google.protobuf.Message
 import org.projectnessie.cel.common.ULong
@@ -45,9 +43,6 @@ class ProtoktMessageLike(
 
     override fun hasField(field: FieldDescriptor) =
         ProtoktReflect.getField(message, field) != null
-
-    override fun hasField(oneof: OneofDescriptor) =
-        oneof.fields.mapNotNull { ProtoktReflect.getField(message, it) }.any()
 
     override fun getField(field: FieldDescriptor) =
         ProtoktObjectValue(
@@ -85,11 +80,7 @@ class ProtoktObjectValue(
     private val descriptorsByFullTypeName: Map<String, Descriptor>
 ) : Value {
     override fun messageValue() =
-        if (fieldDescriptor.type == Type.MESSAGE) {
-            ProtoktMessageLike(value as KtMessage, descriptorsByFullTypeName)
-        } else {
-            null
-        }
+        ProtoktMessageLike(value as KtMessage, descriptorsByFullTypeName)
 
     override fun repeatedValue() =
         (value as List<*>).map { ProtoktObjectValue(fieldDescriptor, it!!, descriptorsByFullTypeName) }
