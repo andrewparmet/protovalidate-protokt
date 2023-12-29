@@ -105,10 +105,10 @@ public final class ProtobufObjectValue implements Value {
 
   @Override
   public Map<Value, Value> mapValue() {
-      List<AbstractMessage> input =
-          value instanceof List
-              ? (List<AbstractMessage>) value
-              : Collections.singletonList((AbstractMessage) value);
+    List<AbstractMessage> input =
+        value instanceof List
+            ? (List<AbstractMessage>) value
+            : Collections.singletonList((AbstractMessage) value);
 
     Descriptors.FieldDescriptor keyDesc = fieldDescriptor.getMessageType().findFieldByNumber(1);
     Descriptors.FieldDescriptor valDesc = fieldDescriptor.getMessageType().findFieldByNumber(2);
