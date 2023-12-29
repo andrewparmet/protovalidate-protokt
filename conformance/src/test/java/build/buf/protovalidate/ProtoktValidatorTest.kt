@@ -264,7 +264,7 @@ class ProtoktValidatorTest {
                 LengthDelimitedBytes.deserialize(
                     build.buf.validate.conformance.cases.BytesIn
                         .newBuilder()
-                        .setVal(ByteString.copyFrom("foo".toByteArray()))
+                        .setVal(ByteString.copyFromUtf8("foo"))
                         .build()
                         .toByteArray()
                 )
@@ -277,7 +277,7 @@ class ProtoktValidatorTest {
                 LengthDelimitedBytes.deserialize(
                     build.buf.validate.conformance.cases.BytesIn
                         .newBuilder()
-                        .setVal(ByteString.copyFrom("bar".toByteArray()))
+                        .setVal(ByteString.copyFromUtf8("bar"))
                         .build()
                         .toByteArray()
                 )
