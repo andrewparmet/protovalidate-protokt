@@ -87,6 +87,10 @@ configure<SpotlessExtension> {
     java {
         targetExclude("src/main/java/build/buf/validate/**/*.java")
     }
+    kotlin {
+        ktlint()
+        targetExclude("build/generated/**")
+    }
 }
 
 dependencies {

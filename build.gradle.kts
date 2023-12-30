@@ -201,6 +201,9 @@ configure<SpotlessExtension> {
     java {
         targetExclude("src/main/java/build/buf/validate/**/*.java", "build/generated/test-sources/bufgen/**/*.java")
     }
+    kotlin {
+        ktlint()
+    }
     kotlinGradle {
         ktlint()
         target("**/*.kts")

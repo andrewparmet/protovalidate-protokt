@@ -21,10 +21,10 @@ import build.buf.protovalidate.internal.evaluator.EvaluatorBuilder
 import build.buf.protovalidate.internal.evaluator.ProtobufMessageValue
 import build.buf.protovalidate.internal.evaluator.ProtoktMessageValue
 import build.buf.protovalidate.internal.evaluator.ProtoktRuntimeContext
-import build.buf.protovalidate.internal.evaluator.toDynamicMessage
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.Descriptors
 import com.google.protobuf.Descriptors.Descriptor
+import com.google.protobuf.Message
 import org.projectnessie.cel.Env
 import org.projectnessie.cel.Library
 import protokt.v1.KtGeneratedMessage
@@ -35,12 +35,12 @@ import kotlin.jvm.Throws
 import kotlin.reflect.full.findAnnotation
 
 class ProtoktValidator(
-    config: Config = Config.newBuilder().build()
+    config: Config = Config.newBuilder().build(),
 ) {
     private val evaluatorBuilder =
         EvaluatorBuilder(
             Env.newEnv(Library.Lib(ValidateLibrary())),
-            config.isDisableLazy
+            config.isDisableLazy,
         )
 
     private val failFast = config.isFailFast
@@ -56,7 +56,10 @@ class ProtoktValidator(
     }
 
     @Throws(ValidationException::class)
-    fun load(descriptor: Descriptor, message: KtMessage? = null) {
+    fun load(
+        descriptor: Descriptor,
+        message: KtMessage? = null,
+    ) {
         descriptorsByFullTypeName[descriptor.fullName] = descriptor
         try {
             evaluatorsByFullTypeName[descriptor.fullName] = evaluatorBuilder.load(descriptor)
@@ -75,29 +78,29 @@ class ProtoktValidator(
         Descriptors.FileDescriptor.buildFrom(
             DescriptorProtos.FileDescriptorProto.parseFrom(proto.serialize()),
             dependencies.map { it.toProtobufJavaDescriptor() }.toTypedArray(),
-            true
+            true,
         )
 
     @Throws(ValidationException::class)
     fun validate(message: KtMessage): ValidationResult =
         evaluatorsByFullTypeName.getValue(
-            message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName
+            message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName,
         ).evaluate(
             ProtoktMessageValue(
                 message,
-                ProtoktRuntimeContext(descriptorsByFullTypeName, emptyMap())
+                ProtoktRuntimeContext(descriptorsByFullTypeName, emptyMap()),
             ),
-            failFast
+            failFast,
         )
 
     @Throws(ValidationException::class)
     fun validate2(message: KtMessage): ValidationResult =
         evaluatorsByFullTypeName.getValue(
-            message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName
+            message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName,
         ).evaluate(
             ProtobufMessageValue(
-                toDynamicMessage(message, ProtoktRuntimeContext(descriptorsByFullTypeName, emptyMap())),
+                ProtoktRuntimeContext(descriptorsByFullTypeName, emptyMap()).protobufJavaValue(message) as Message,
             ),
-            failFast
+            failFast,
         )
 }

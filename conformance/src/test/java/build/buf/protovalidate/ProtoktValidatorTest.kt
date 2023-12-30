@@ -19,35 +19,21 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import protokt.v1.AbstractKtDeserializer
 import protokt.v1.AbstractKtMessage
-import protokt.v1.Bytes
 import protokt.v1.KtGeneratedMessage
 import protokt.v1.KtMessageDeserializer
 import protokt.v1.UnknownFieldSet
-import protokt.v1.buf.validate.conformance.cases.BytesPattern
-import protokt.v1.buf.validate.conformance.cases.EnumDefined
-import protokt.v1.buf.validate.conformance.cases.MapRecursive
 import protokt.v1.buf.validate.conformance.cases.MessageRequiredOneof
 import protokt.v1.buf.validate.conformance.cases.Oneof
-import protokt.v1.buf.validate.conformance.cases.RepeatedEmbeddedEnumNotIn
-import protokt.v1.buf.validate.conformance.cases.SInt64GT
-import protokt.v1.buf.validate.conformance.cases.StringHttpHeaderName
-import protokt.v1.buf.validate.conformance.cases.TestEnum
 import protokt.v1.buf.validate.conformance.cases.TestMsg
 import protokt.v1.buf.validate.conformance.cases.UInt64In
-import protokt.v1.buf.validate.conformance.cases.WrapperInt32
-import protokt.v1.buf.validate.conformance.cases.WrapperUInt64
 import protokt.v1.buf.validate.conformance.cases.bytes_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.custom_constraints.DynRuntimeError
-import protokt.v1.buf.validate.conformance.cases.custom_constraints.MessageExpressions
 import protokt.v1.buf.validate.conformance.cases.custom_constraints.custom_constraints_file_descriptor
-import protokt.v1.buf.validate.conformance.cases.enums_file_descriptor
-import protokt.v1.buf.validate.conformance.cases.maps_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.messages_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.numbers_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.oneofs_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.repeated_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.strings_file_descriptor
-import protokt.v1.buf.validate.conformance.cases.wkt_wrappers_file_descriptor
 
 class ProtoktValidatorTest {
     private val validator = ProtoktValidator()
@@ -60,7 +46,7 @@ class ProtoktValidatorTest {
             validator.validate2(
                 DynRuntimeError {
                     a = 123
-                }
+                },
             )
 
         assertThat(result.isSuccess).isFalse()
@@ -74,12 +60,13 @@ class ProtoktValidatorTest {
         val result =
             validator.validate(
                 MessageRequiredOneof {
-                    one = MessageRequiredOneof.One.Val(
-                        TestMsg {
-                            const = "foo"
-                        }
-                    )
-                }
+                    one =
+                        MessageRequiredOneof.One.Val(
+                            TestMsg {
+                                const = "foo"
+                            },
+                        )
+                },
             )
 
         assertThat(result.violations).isEmpty()
@@ -94,7 +81,7 @@ class ProtoktValidatorTest {
             validator.validate(
                 Oneof {
                     o = Oneof.O.X("foobar")
-                }
+                },
             )
 
         assertThat(result.violations).isEmpty()
@@ -109,7 +96,7 @@ class ProtoktValidatorTest {
             validator.validate(
                 UInt64In {
                     `val` = 4u
-                }
+                },
             )
 
         assertThat(result.isSuccess).isFalse()
@@ -126,8 +113,8 @@ class ProtoktValidatorTest {
                         .newBuilder()
                         .setVal(4)
                         .build()
-                        .toByteArray()
-                )
+                        .toByteArray(),
+                ),
             )
 
         assertThat(result.isSuccess).isFalse()
@@ -139,8 +126,8 @@ class ProtoktValidatorTest {
                         .newBuilder()
                         .setVal(3)
                         .build()
-                        .toByteArray()
-                )
+                        .toByteArray(),
+                ),
             )
 
         assertThat(result2.isSuccess).isTrue()
@@ -157,8 +144,8 @@ class ProtoktValidatorTest {
                         .newBuilder()
                         .setVal(4)
                         .build()
-                        .toByteArray()
-                )
+                        .toByteArray(),
+                ),
             )
 
         assertThat(result.isSuccess).isFalse()
@@ -170,8 +157,8 @@ class ProtoktValidatorTest {
                         .newBuilder()
                         .setVal(3)
                         .build()
-                        .toByteArray()
-                )
+                        .toByteArray(),
+                ),
             )
 
         assertThat(result2.isSuccess).isTrue()
@@ -188,8 +175,8 @@ class ProtoktValidatorTest {
                         .newBuilder()
                         .setVal(4)
                         .build()
-                        .toByteArray()
-                )
+                        .toByteArray(),
+                ),
             )
 
         assertThat(result.isSuccess).isFalse()
@@ -201,8 +188,8 @@ class ProtoktValidatorTest {
                         .newBuilder()
                         .setVal(3)
                         .build()
-                        .toByteArray()
-                )
+                        .toByteArray(),
+                ),
             )
 
         assertThat(result2.isSuccess).isTrue()
@@ -219,8 +206,8 @@ class ProtoktValidatorTest {
                         .newBuilder()
                         .setVal(4)
                         .build()
-                        .toByteArray()
-                )
+                        .toByteArray(),
+                ),
             )
 
         assertThat(result.isSuccess).isFalse()
@@ -232,8 +219,8 @@ class ProtoktValidatorTest {
                         .newBuilder()
                         .setVal(3)
                         .build()
-                        .toByteArray()
-                )
+                        .toByteArray(),
+                ),
             )
 
         assertThat(result2.isSuccess).isTrue()
@@ -250,8 +237,8 @@ class ProtoktValidatorTest {
                         .newBuilder()
                         .setVal("foo")
                         .build()
-                        .toByteArray()
-                )
+                        .toByteArray(),
+                ),
             )
 
         assertThat(result.isSuccess).isFalse()
@@ -263,8 +250,8 @@ class ProtoktValidatorTest {
                         .newBuilder()
                         .setVal("bar")
                         .build()
-                        .toByteArray()
-                )
+                        .toByteArray(),
+                ),
             )
 
         assertThat(result2.isSuccess).isTrue()
@@ -281,8 +268,8 @@ class ProtoktValidatorTest {
                         .newBuilder()
                         .setVal(ByteString.copyFromUtf8("foo"))
                         .build()
-                        .toByteArray()
-                )
+                        .toByteArray(),
+                ),
             )
 
         assertThat(result.isSuccess).isFalse()
@@ -294,8 +281,8 @@ class ProtoktValidatorTest {
                         .newBuilder()
                         .setVal(ByteString.copyFromUtf8("bar"))
                         .build()
-                        .toByteArray()
-                )
+                        .toByteArray(),
+                ),
             )
 
         assertThat(result2.isSuccess).isTrue()
@@ -312,8 +299,8 @@ class ProtoktValidatorTest {
                         .newBuilder()
                         .addAllVal(listOf("foo", "foo"))
                         .build()
-                        .toByteArray()
-                )
+                        .toByteArray(),
+                ),
             )
 
         assertThat(result.isSuccess).isFalse()
@@ -325,8 +312,8 @@ class ProtoktValidatorTest {
                         .newBuilder()
                         .addAllVal(listOf("foo", "bar"))
                         .build()
-                        .toByteArray()
-                )
+                        .toByteArray(),
+                ),
             )
 
         assertThat(result2.isSuccess).isTrue()
@@ -345,7 +332,7 @@ class ProtoktValidatorTest {
 
     @KtGeneratedMessage("buf.validate.conformance.cases.Int64In")
     class Int64(
-        override val unknownFields: UnknownFieldSet
+        override val unknownFields: UnknownFieldSet,
     ) : AbstractDynamicMessage() {
         companion object : AbstractKtDeserializer<Int64>() {
             @JvmStatic
@@ -364,7 +351,7 @@ class ProtoktValidatorTest {
 
     @KtGeneratedMessage("buf.validate.conformance.cases.UInt64In")
     class UInt64(
-        override val unknownFields: UnknownFieldSet
+        override val unknownFields: UnknownFieldSet,
     ) : AbstractDynamicMessage() {
         companion object : AbstractKtDeserializer<UInt64>() {
             @JvmStatic
@@ -383,7 +370,7 @@ class ProtoktValidatorTest {
 
     @KtGeneratedMessage("buf.validate.conformance.cases.Fixed32In")
     class Fixed32(
-        override val unknownFields: UnknownFieldSet
+        override val unknownFields: UnknownFieldSet,
     ) : AbstractDynamicMessage() {
         companion object : AbstractKtDeserializer<Fixed32>() {
             @JvmStatic
@@ -402,7 +389,7 @@ class ProtoktValidatorTest {
 
     @KtGeneratedMessage("buf.validate.conformance.cases.Fixed64In")
     class Fixed64(
-        override val unknownFields: UnknownFieldSet
+        override val unknownFields: UnknownFieldSet,
     ) : AbstractDynamicMessage() {
         companion object : AbstractKtDeserializer<Fixed64>() {
             @JvmStatic
@@ -421,7 +408,7 @@ class ProtoktValidatorTest {
 
     @KtGeneratedMessage("buf.validate.conformance.cases.StringIn")
     class LengthDelimitedString(
-        override val unknownFields: UnknownFieldSet
+        override val unknownFields: UnknownFieldSet,
     ) : AbstractDynamicMessage() {
         companion object : AbstractKtDeserializer<LengthDelimitedString>() {
             @JvmStatic
@@ -440,7 +427,7 @@ class ProtoktValidatorTest {
 
     @KtGeneratedMessage("buf.validate.conformance.cases.BytesIn")
     class LengthDelimitedBytes(
-        override val unknownFields: UnknownFieldSet
+        override val unknownFields: UnknownFieldSet,
     ) : AbstractDynamicMessage() {
         companion object : AbstractKtDeserializer<LengthDelimitedBytes>() {
             @JvmStatic
@@ -459,7 +446,7 @@ class ProtoktValidatorTest {
 
     @KtGeneratedMessage("buf.validate.conformance.cases.RepeatedUnique")
     class RepeatedLengthDelimited(
-        override val unknownFields: UnknownFieldSet
+        override val unknownFields: UnknownFieldSet,
     ) : AbstractDynamicMessage() {
         companion object : AbstractKtDeserializer<RepeatedLengthDelimited>() {
             @JvmStatic

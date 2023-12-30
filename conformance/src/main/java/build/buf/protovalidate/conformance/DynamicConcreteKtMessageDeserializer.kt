@@ -37,10 +37,11 @@ object DynamicConcreteKtMessageDeserializer {
                         .single { it.simpleName == Empty.Deserializer::class.simpleName }
                         .objectInstance as KtDeserializer<*>
             }
-
     }
 
     @JvmStatic
-    fun parse(fullTypeName: String, bytes: InputStream): KtMessage =
-        deserializersByFullTypeName.getValue(fullTypeName).deserialize(bytes)
+    fun parse(
+        fullTypeName: String,
+        bytes: InputStream,
+    ): KtMessage = deserializersByFullTypeName.getValue(fullTypeName).deserialize(bytes)
 }

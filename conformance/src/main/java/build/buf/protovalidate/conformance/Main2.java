@@ -95,7 +95,7 @@ public class Main2 {
         validator.load(it, message);
       }
       System.err.println("executing test for message of type " + message.getClass());
-      ValidationResult result = validator.validate2(message);
+      ValidationResult result = validator.validate(message);
       List<Violation> violations = result.getViolations();
       if (ProtoktShortCircuit.shortCircuitFailure(message, input)) {
         return TestResult.newBuilder()
@@ -113,7 +113,7 @@ public class Main2 {
     } catch (ExecutionException e) {
       return TestResult.newBuilder().setRuntimeError(e.getMessage()).build();
     } catch (Exception e) {
-        e.printStackTrace();
+      e.printStackTrace();
       return unexpectedErrorResult("unknown error: %s", e.toString());
     }
   }

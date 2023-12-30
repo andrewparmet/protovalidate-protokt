@@ -44,7 +44,7 @@ object ProtoktReflect {
                                 ?: oneofProperty(messageClass)(field, message)
                                 ?: getUnknownField(field, message)
                         }
-                }
+                },
             )
 
     private fun topLevelProperty(klass: KClass<out KtMessage>): (FieldDescriptor, KtMessage) -> Any? {
@@ -95,61 +95,65 @@ object ProtoktReflect {
         return { field, msg -> gettersByNumber[field.number]?.invoke(msg) }
     }
 
-    private fun getUnknownField(field: FieldDescriptor, message: KtMessage) =
-        message::class
-            .declaredMemberProperties
-            .firstOrNull { it.returnType.classifier == UnknownFieldSet::class }
-            .let {
-                @Suppress("UNCHECKED_CAST")
-                it as KProperty1<KtMessage, UnknownFieldSet>
-            }
-            .get(message)
-            .unknownFields[field.number.toUInt()]
-            ?.let { value ->
-                when {
-                    value.varint.isNotEmpty() ->
-                        value.varint
-                            .map(VarintVal::value)
-                            .map {
-                                if (field.type == FieldDescriptor.Type.UINT64) {
-                                    it
-                                } else {
-                                    it.toLong()
-                                }
+    private fun getUnknownField(
+        field: FieldDescriptor,
+        message: KtMessage,
+    ) = message::class
+        .declaredMemberProperties
+        .firstOrNull { it.returnType.classifier == UnknownFieldSet::class }
+        .let {
+            @Suppress("UNCHECKED_CAST")
+            it as KProperty1<KtMessage, UnknownFieldSet>
+        }
+        .get(message)
+        .unknownFields[field.number.toUInt()]
+        ?.let { value ->
+            when {
+                value.varint.isNotEmpty() ->
+                    value.varint
+                        .map(VarintVal::value)
+                        .map {
+                            if (field.type == FieldDescriptor.Type.UINT64) {
+                                it
+                            } else {
+                                it.toLong()
                             }
+                        }
 
-                    value.fixed32.isNotEmpty() ->
-                        value.fixed32.map(Fixed32Val::value)
+                value.fixed32.isNotEmpty() ->
+                    value.fixed32.map(Fixed32Val::value)
 
-                    value.fixed64.isNotEmpty() ->
-                        value.fixed64.map(Fixed64Val::value)
+                value.fixed64.isNotEmpty() ->
+                    value.fixed64.map(Fixed64Val::value)
 
-                    value.lengthDelimited.isNotEmpty() ->
-                        value.lengthDelimited
-                            .map(LengthDelimitedVal::value)
-                            .map {
-                                if (field.type == Descriptors.FieldDescriptor.Type.STRING) {
-                                    StandardCharsets.UTF_8.decode(it.asReadOnlyBuffer()).toString()
-                                } else {
-                                    it
-                                }
+                value.lengthDelimited.isNotEmpty() ->
+                    value.lengthDelimited
+                        .map(LengthDelimitedVal::value)
+                        .map {
+                            if (field.type == Descriptors.FieldDescriptor.Type.STRING) {
+                                StandardCharsets.UTF_8.decode(it.asReadOnlyBuffer()).toString()
+                            } else {
+                                it
                             }
+                        }
 
-                    else -> error("unknown field for field number ${field.number} existed but was empty")
-                }
+                else -> error("unknown field for field number ${field.number} existed but was empty")
             }
-            .let {
-                if (field.isRepeated) {
-                    if (field.isMapField) {
-                        it ?: emptyMap<Any, Any>()
-                    } else {
-                        it ?: emptyList<Any>()
-                    }
+        }
+        .let {
+            if (field.isRepeated) {
+                if (field.isMapField) {
+                    it ?: emptyMap<Any, Any>()
                 } else {
-                    it?.first()
+                    it ?: emptyList<Any>()
                 }
+            } else {
+                it?.first()
             }
+        }
 
-    fun getField(message: KtMessage, field: FieldDescriptor): Any? =
-        reflectedGettersByClass[message::class](field, message)
+    fun getField(
+        message: KtMessage,
+        field: FieldDescriptor,
+    ): Any? = reflectedGettersByClass[message::class](field, message)
 }

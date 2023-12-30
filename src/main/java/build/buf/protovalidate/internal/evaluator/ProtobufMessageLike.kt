@@ -18,14 +18,11 @@ import com.google.protobuf.Descriptors.FieldDescriptor
 import com.google.protobuf.Message
 
 class ProtobufMessageLike(
-    val message: Message
+    val message: Message,
 ) : MessageLike {
-    override fun getRepeatedFieldCount(field: FieldDescriptor) =
-        message.getRepeatedFieldCount(field)
+    override fun getRepeatedFieldCount(field: FieldDescriptor) = message.getRepeatedFieldCount(field)
 
-    override fun hasField(field: FieldDescriptor) =
-        message.hasField(field)
+    override fun hasField(field: FieldDescriptor) = message.hasField(field)
 
-    override fun getField(field: FieldDescriptor) =
-        ProtobufObjectValue(field, message.getField(field))
+    override fun getField(field: FieldDescriptor) = ProtobufObjectValue(field, message.getField(field))
 }

@@ -40,7 +40,10 @@ object ProtoktShortCircuit {
     // if the message is reserialized and deserialized, there's no
     // implementation-independent way to verify these cases
     @JvmStatic
-    fun shortCircuit(message: KtMessage, input: ByteString): Boolean =
+    fun shortCircuit(
+        message: KtMessage,
+        input: ByteString,
+    ): Boolean =
         when (message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName) {
             "buf.validate.conformance.cases.Fixed64Ignore" ->
                 Fixed64Ignore.parseFrom(input).let {
@@ -82,7 +85,7 @@ object ProtoktShortCircuit {
                 Int32Ignore.parseFrom(input).let {
                     it.`val` == 0 && !it.hasField(Int32Ignore.getDescriptor().findFieldByName("val"))
                 }
-            "buf.validate.conformance.cases.FloatIgnore"  ->
+            "buf.validate.conformance.cases.FloatIgnore" ->
                 FloatIgnore.parseFrom(input).let {
                     it.`val` == 0.0f && !it.hasField(FloatIgnore.getDescriptor().findFieldByName("val"))
                 }
@@ -102,7 +105,9 @@ object ProtoktShortCircuit {
         }
 
     @JvmStatic
-    fun shortCircuitFailure(message: KtMessage, input: ByteString) =
-        message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName == "buf.validate.conformance.cases.RequiredProto3Scalar" &&
-            !RequiredProto3Scalar.parseFrom(input).hasField(RequiredProto3Scalar.getDescriptor().findFieldByName("val"))
+    fun shortCircuitFailure(
+        message: KtMessage,
+        input: ByteString,
+    ) = message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName == "buf.validate.conformance.cases.RequiredProto3Scalar" &&
+        !RequiredProto3Scalar.parseFrom(input).hasField(RequiredProto3Scalar.getDescriptor().findFieldByName("val"))
 }
