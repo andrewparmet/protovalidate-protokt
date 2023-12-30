@@ -113,6 +113,7 @@ public class Main2 {
     } catch (ExecutionException e) {
       return TestResult.newBuilder().setRuntimeError(e.getMessage()).build();
     } catch (Exception e) {
+        e.printStackTrace();
       return unexpectedErrorResult("unknown error: %s", e.toString());
     }
   }

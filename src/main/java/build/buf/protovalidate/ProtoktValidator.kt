@@ -20,6 +20,7 @@ import build.buf.protovalidate.internal.evaluator.Evaluator
 import build.buf.protovalidate.internal.evaluator.EvaluatorBuilder
 import build.buf.protovalidate.internal.evaluator.ProtobufMessageValue
 import build.buf.protovalidate.internal.evaluator.ProtoktMessageValue
+import build.buf.protovalidate.internal.evaluator.ProtoktRuntimeContext
 import build.buf.protovalidate.internal.evaluator.toDynamicMessage
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.Descriptors
@@ -84,7 +85,7 @@ class ProtoktValidator(
         ).evaluate(
             ProtoktMessageValue(
                 message,
-                descriptorsByFullTypeName
+                ProtoktRuntimeContext(descriptorsByFullTypeName, emptyMap())
             ),
             failFast
         )
@@ -95,7 +96,7 @@ class ProtoktValidator(
             message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName
         ).evaluate(
             ProtobufMessageValue(
-                toDynamicMessage(message, descriptorsByFullTypeName),
+                toDynamicMessage(message, ProtoktRuntimeContext(descriptorsByFullTypeName, emptyMap())),
             ),
             failFast
         )

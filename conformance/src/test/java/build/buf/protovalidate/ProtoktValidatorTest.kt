@@ -19,9 +19,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import protokt.v1.AbstractKtDeserializer
 import protokt.v1.AbstractKtMessage
+import protokt.v1.Bytes
 import protokt.v1.KtGeneratedMessage
 import protokt.v1.KtMessageDeserializer
 import protokt.v1.UnknownFieldSet
+import protokt.v1.buf.validate.conformance.cases.BytesPattern
 import protokt.v1.buf.validate.conformance.cases.EnumDefined
 import protokt.v1.buf.validate.conformance.cases.MapRecursive
 import protokt.v1.buf.validate.conformance.cases.MessageRequiredOneof
@@ -33,7 +35,11 @@ import protokt.v1.buf.validate.conformance.cases.TestEnum
 import protokt.v1.buf.validate.conformance.cases.TestMsg
 import protokt.v1.buf.validate.conformance.cases.UInt64In
 import protokt.v1.buf.validate.conformance.cases.WrapperInt32
+import protokt.v1.buf.validate.conformance.cases.WrapperUInt64
 import protokt.v1.buf.validate.conformance.cases.bytes_file_descriptor
+import protokt.v1.buf.validate.conformance.cases.custom_constraints.DynRuntimeError
+import protokt.v1.buf.validate.conformance.cases.custom_constraints.MessageExpressions
+import protokt.v1.buf.validate.conformance.cases.custom_constraints.custom_constraints_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.enums_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.maps_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.messages_file_descriptor
@@ -48,12 +54,12 @@ class ProtoktValidatorTest {
 
     @Test
     fun `test sint64 constraint`() {
-        validator.load(enums_file_descriptor.descriptor)
+        validator.load(custom_constraints_file_descriptor.descriptor)
 
         val result =
             validator.validate2(
-                EnumDefined {
-                    `val` = TestEnum.from(2147483647)
+                DynRuntimeError {
+                    a = 123
                 }
             )
 

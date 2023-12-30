@@ -29,10 +29,9 @@ import com.google.protobuf.Message
 import com.google.protobuf.StringValue
 import com.google.protobuf.UInt32Value
 import com.google.protobuf.UInt64Value
-import com.google.protobuf.UnknownFieldSet
 import com.google.protobuf.WireFormat
-import org.projectnessie.cel.common.ULong
 import protokt.v1.Bytes
+import protokt.v1.Converter
 import protokt.v1.KtEnum
 import protokt.v1.KtGeneratedMessage
 import protokt.v1.KtMessage
@@ -40,7 +39,7 @@ import kotlin.reflect.full.findAnnotation
 
 class ProtoktMessageLike(
     val message: KtMessage,
-    internal val descriptorsByFullTypeName: Map<String, Descriptor>
+    val context: ProtoktRuntimeContext
 ) : MessageLike {
     override fun getRepeatedFieldCount(field: FieldDescriptor): Int {
         val value = ProtoktReflect.getField(message, field)
@@ -58,18 +57,16 @@ class ProtoktMessageLike(
         ProtoktObjectValue(
             field,
             ProtoktReflect.getField(message, field)!!,
-            descriptorsByFullTypeName
+            context
         )
 }
 
 class ProtoktMessageValue(
-    message: KtMessage,
-    private val descriptorsByFullTypeName: Map<String, Descriptor>
+    private val message: KtMessage,
+    private val context: ProtoktRuntimeContext
 ) : Value {
-    private val message = ProtoktMessageLike(message, descriptorsByFullTypeName)
-
     override fun messageValue() =
-        message
+        ProtoktMessageLike(message, context)
 
     override fun repeatedValue() =
         emptyList<Value>()
@@ -78,7 +75,7 @@ class ProtoktMessageValue(
         emptyMap<Value, Value>()
 
     override fun celValue() =
-        dynamic(message)
+        context.protobufJavaValue(message)
 
     override fun <T : Any> jvmValue(clazz: Class<T>) =
         null
@@ -87,13 +84,13 @@ class ProtoktMessageValue(
 class ProtoktObjectValue(
     private val fieldDescriptor: FieldDescriptor,
     private val value: Any,
-    private val descriptorsByFullTypeName: Map<String, Descriptor>
+    private val context: ProtoktRuntimeContext
 ) : Value {
     override fun messageValue() =
-        ProtoktMessageLike(value as KtMessage, descriptorsByFullTypeName)
+        ProtoktMessageLike(value as KtMessage, context)
 
     override fun repeatedValue() =
-        (value as List<*>).map { ProtoktObjectValue(fieldDescriptor, it!!, descriptorsByFullTypeName) }
+        (value as List<*>).map { ProtoktObjectValue(fieldDescriptor, it!!, context) }
 
     override fun mapValue(): Map<Value, Value> {
         val input = value as Map<*, *>
@@ -103,8 +100,8 @@ class ProtoktObjectValue(
 
         return input.entries.associate { (key, value) ->
             Pair(
-                ProtoktObjectValue(keyDesc, key!!, descriptorsByFullTypeName),
-                ProtoktObjectValue(valDesc, value!!, descriptorsByFullTypeName)
+                ProtoktObjectValue(keyDesc, key!!, context),
+                ProtoktObjectValue(valDesc, value!!, context)
             )
         }
     }
@@ -112,9 +109,9 @@ class ProtoktObjectValue(
     override fun celValue() =
         when (value) {
             is KtEnum -> value.value
-            is UInt -> ULong.valueOf(value.toLong())
-            is kotlin.ULong -> ULong.valueOf(value.toLong())
-            is KtMessage -> dynamic(ProtoktMessageLike(value, descriptorsByFullTypeName))
+            is UInt -> org.projectnessie.cel.common.ULong.valueOf(value.toLong())
+            is ULong -> org.projectnessie.cel.common.ULong.valueOf(value.toLong())
+            is KtMessage -> context.protobufJavaValue(value)
 
             // todo: support Bytes in CEL
             is Bytes -> ByteString.copyFrom(value.asReadOnlyBuffer())
@@ -127,8 +124,8 @@ class ProtoktObjectValue(
         when (value) {
             is KtEnum -> value.value
             is UInt -> value.toInt()
-            is kotlin.ULong -> value.toLong()
-            is KtMessage -> dynamic(ProtoktMessageLike(value, descriptorsByFullTypeName))
+            is ULong -> value.toLong()
+            is KtMessage -> context.protobufJavaValue(value)
 
             // todo: support Bytes in CEL
             is Bytes -> ByteString.copyFrom(value.asReadOnlyBuffer())
@@ -138,97 +135,127 @@ class ProtoktObjectValue(
         }?.let(clazz::cast)
 }
 
-private fun dynamic(message: ProtoktMessageLike): Message {
+class ProtoktRuntimeContext(
+    val descriptorsByFullTypeName: Map<String, Descriptor>,
+    val convertersByFullTypeName: Map<String, Converter<*, *>>
+) {
+    fun protobufJavaValue(value: Any?) =
+        when (value) {
+            is KtEnum -> value.value
+            is UInt -> value.toInt()
+            is ULong -> value.toLong()
+            is KtMessage -> toDynamicMessage(value, this)
+
+            // todo: support Bytes in CEL
+            is Bytes -> ByteString.copyFrom(value.asReadOnlyBuffer())
+
+            // pray
+            else -> value
+        }
+
+    companion object {
+        val DEFAULT_CONVERTERS: Map<String, Converter<*, *>> =
+            mapOf(
+
+            )
+    }
+}
+
+fun toDynamicMessage(message: KtMessage, context: ProtoktRuntimeContext): Message {
     val descriptor =
-        message.descriptorsByFullTypeName
-            .getValue(message.message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName)
+        context.descriptorsByFullTypeName
+            .getValue(message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName)
 
     return DynamicMessage.newBuilder(descriptor)
         .apply {
             descriptor.fields.forEach { field ->
-                if (message.hasField(field)) {
+                ProtoktReflect.getField(message, field)?.let { value ->
                     setField(
                         field,
-                        message.getField(field).let { value ->
-                            when {
-                                field.type == FieldDescriptor.Type.ENUM ->
-                                    if (field.isRepeated) {
-                                        value.repeatedValue().map { field.enumType.findValueByNumberCreatingIfUnknown(it.jvmValue(Integer::class.java)!!.toInt()) }
+                        when {
+                            field.type == FieldDescriptor.Type.ENUM ->
+                                if (field.isRepeated) {
+                                    (value as List<*>).map { field.enumType.findValueByNumberCreatingIfUnknown(((it as KtEnum).value)) }
+                                } else {
+                                    field.enumType.findValueByNumberCreatingIfUnknown(((value as KtEnum).value))
+                                }
+
+                            field.isMapField -> {
+                                val keyDesc = field.messageType.findFieldByNumber(1)
+                                val valDesc = field.messageType.findFieldByNumber(2)
+                                val keyDefault =
+                                    if (keyDesc.type == FieldDescriptor.Type.MESSAGE) {
+                                        null
                                     } else {
-                                        field.enumType.findValueByNumberCreatingIfUnknown(value.jvmValue(Integer::class.java)!!.toInt())
+                                        keyDesc.defaultValue
                                     }
 
-                                field.isMapField -> {
-                                    val keyDesc = field.messageType.findFieldByNumber(1)
-                                    val valDesc = field.messageType.findFieldByNumber(2)
-                                    val keyDefault =
-                                        if (keyDesc.type == FieldDescriptor.Type.MESSAGE) {
-                                            null
-                                        } else {
-                                            keyDesc.defaultValue
-                                        }
-
-                                    val valDefault =
-                                        if (valDesc.type == FieldDescriptor.Type.MESSAGE) {
-                                            null
-                                        } else {
-                                            valDesc.defaultValue
-                                        }
-
-                                    val defaultEntry =
-                                        MapEntry.newDefaultInstance(
-                                            field.messageType,
-                                            WireFormat.FieldType.valueOf(keyDesc.type.name),
-                                            keyDefault,
-                                            WireFormat.FieldType.valueOf(valDesc.type.name),
-                                            valDefault,
-                                        ) as MapEntry<Any?, Any?>
-
-                                    (value.mapValue()).map { (k, v) ->
-                                        defaultEntry.toBuilder()
-                                            .setKey(k.jvmValue(Any::class.java))
-                                            .setValue(v.jvmValue(Any::class.java))
-                                            .build()
+                                val valDefault =
+                                    if (valDesc.type == FieldDescriptor.Type.MESSAGE) {
+                                        null
+                                    } else {
+                                        valDesc.defaultValue
                                     }
+
+                                val defaultEntry =
+                                    MapEntry.newDefaultInstance(
+                                        field.messageType,
+                                        WireFormat.FieldType.valueOf(keyDesc.type.name),
+                                        keyDefault,
+                                        WireFormat.FieldType.valueOf(valDesc.type.name),
+                                        valDefault,
+                                    ) as MapEntry<Any?, Any?>
+
+                                (value as Map<*, *>).map { (k, v) ->
+                                    defaultEntry.toBuilder()
+                                        .setKey(context.protobufJavaValue(k))
+                                        .setValue(context.protobufJavaValue(v))
+                                        .build()
                                 }
-
-                                field.isRepeated ->
-                                    value.repeatedValue().map { it.jvmValue(Any::class.java) }
-
-                                field.type == FieldDescriptor.Type.MESSAGE -> {
-                                    // todo: proper wrapper type registry
-                                    when (field.messageType.fullName) {
-                                        "google.protobuf.DoubleValue" ->
-                                            DoubleValue.newBuilder().setValue(value.jvmValue(java.lang.Double::class.java)!!.toDouble()).build()
-                                        "google.protobuf.FloatValue" ->
-                                            FloatValue.newBuilder().setValue(value.jvmValue(java.lang.Float::class.java)!!.toFloat()).build()
-                                        "google.protobuf.Int64Value" ->
-                                            Int64Value.newBuilder().setValue(value.jvmValue(java.lang.Long::class.java)!!.toLong()).build()
-                                        "google.protobuf.UInt64Value" ->
-                                            UInt64Value.newBuilder().setValue(value.jvmValue(java.lang.Long::class.java)!!.toLong()).build()
-                                        "google.protobuf.Int32Value" ->
-                                            Int32Value.newBuilder().setValue(value.jvmValue(Integer::class.java)!!.toInt()).build()
-                                        "google.protobuf.UInt32Value" ->
-                                            UInt32Value.newBuilder().setValue(value.jvmValue(Integer::class.java)!!.toInt()).build()
-                                        "google.protobuf.BoolValue" ->
-                                            BoolValue.newBuilder().setValue(value.jvmValue(java.lang.Boolean::class.java)!!.booleanValue()).build()
-                                        "google.protobuf.StringValue" ->
-                                            StringValue.newBuilder().setValue(value.jvmValue(String::class.java)).build()
-                                        "google.protobuf.BytesValue" ->
-                                            BytesValue.newBuilder().setValue(value.jvmValue(ByteString::class.java)).build()
-                                        else -> value.jvmValue(Any::class.java)
-                                    }
-                                }
-
-                                else -> value.jvmValue(Any::class.java)
                             }
+
+                            field.isRepeated ->
+                                (value as List<*>).map(context::protobufJavaValue)
+
+                            field.type == FieldDescriptor.Type.MESSAGE -> {
+                                /*
+                                ProtoktRuntimeContext.DEFAULT_CONVERTERS[field.messageType.fullName]?.let {
+                                    @Suppress("UNCHECKED_CAST")
+                                    val coerced = it as Converter<Any, Any>
+                                    coerced.unwrap(value)
+                                } ?: context.protobufJavaValue(value)
+
+                                 */
+                                // todo: proper wrapper type registry
+                                when (field.messageType.fullName) {
+                                    "google.protobuf.DoubleValue" ->
+                                        DoubleValue.newBuilder().setValue((value as Double).toDouble()).build()
+                                    "google.protobuf.FloatValue" ->
+                                        FloatValue.newBuilder().setValue((value as Float).toFloat()).build()
+                                    "google.protobuf.Int64Value" ->
+                                        Int64Value.newBuilder().setValue((value as Long).toLong()).build()
+                                    "google.protobuf.UInt64Value" ->
+                                        UInt64Value.newBuilder().setValue((value as ULong).toLong()).build()
+                                    "google.protobuf.Int32Value" ->
+                                        Int32Value.newBuilder().setValue((value as Int).toInt()).build()
+                                    "google.protobuf.UInt32Value" ->
+                                        UInt32Value.newBuilder().setValue((value as UInt).toInt()).build()
+                                    "google.protobuf.BoolValue" ->
+                                        BoolValue.newBuilder().setValue((value as Boolean)).build()
+                                    "google.protobuf.StringValue" ->
+                                        StringValue.newBuilder().setValue(value as String).build()
+                                    "google.protobuf.BytesValue" ->
+                                        BytesValue.newBuilder().setValue(context.protobufJavaValue(value) as ByteString).build()
+                                    else -> context.protobufJavaValue(value)
+                                }
+                            }
+
+                            else -> context.protobufJavaValue(value)
                         }
                     )
                 }
             }
         }
+        // todo: transform unknown fields
         .build()
 }
-
-fun toDynamicMessage(message: KtMessage, descriptorsByFullTypeName: Map<String, Descriptor>) =
-    dynamic(ProtoktMessageLike(message, descriptorsByFullTypeName))
