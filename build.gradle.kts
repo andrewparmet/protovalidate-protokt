@@ -200,7 +200,7 @@ sourceSets {
 apply(plugin = "com.diffplug.spotless")
 configure<SpotlessExtension> {
     java {
-        targetExclude("src/main/java/build/buf/validate/**/*.java", "build/generated/test-sources/bufgen/**/*.java")
+        targetExclude("src/main/java/build/buf/validate/**/*.java", "build/generated/**/*.java")
     }
     kotlin {
         ktlint()
