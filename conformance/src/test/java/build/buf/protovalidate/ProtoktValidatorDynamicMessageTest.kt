@@ -14,8 +14,42 @@
 
 package build.buf.protovalidate
 
+import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.Test
 import protokt.v1.KtMessage
+import protokt.v1.buf.validate.conformance.cases.numbers_file_descriptor
 
 class ProtoktValidatorDynamicMessageTest : AbstractProtoktValidatorTest() {
     override fun validate(message: KtMessage) = validator.validate2(message)
+
+    @Test
+    fun `2test message with fixed32 encoded purely as unknown fields (dynamic message without a dedicated type)`() {
+        validator.load(numbers_file_descriptor.descriptor)
+
+        val result =
+            validate(
+                Fixed32.deserialize(
+                    build.buf.validate.conformance.cases.Fixed32In
+                        .newBuilder()
+                        .setVal(4)
+                        .build()
+                        .toByteArray(),
+                ),
+            )
+
+        Assertions.assertThat(result.isSuccess).isFalse()
+
+        val result2 =
+            validate(
+                Fixed32.deserialize(
+                    build.buf.validate.conformance.cases.Fixed32In
+                        .newBuilder()
+                        .setVal(3)
+                        .build()
+                        .toByteArray(),
+                ),
+            )
+
+        Assertions.assertThat(result2.isSuccess).isTrue()
+    }
 }

@@ -23,12 +23,12 @@ class ProtoktMessageLike(
     val message: KtMessage,
     val context: ProtoktRuntimeContext,
 ) : MessageLike {
-    override fun hasField(field: FieldDescriptor) = ProtoktReflect.getField(message, field) != null
+    override fun hasField(field: FieldDescriptor) = ProtoktReflect.getField(message, field) is ProtoktReflect.Found
 
     override fun getField(field: FieldDescriptor) =
         ProtoktObjectValue(
             field,
-            ProtoktReflect.getField(message, field)!!,
+            (ProtoktReflect.getField(message, field) as ProtoktReflect.Found).value,
             context,
         )
 }
