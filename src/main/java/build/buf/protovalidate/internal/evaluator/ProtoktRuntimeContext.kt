@@ -93,9 +93,7 @@ private fun toDynamicMessage(
     return DynamicMessage.newBuilder(descriptor)
         .apply {
             descriptor.fields.forEach { field ->
-                val result = ProtoktReflect.getField(message, field)
-                if (result is ProtoktReflect.Found && !result.wasUnknown) {
-                    val value = result.value
+                ProtoktReflect.getField(message, field)?.let { value ->
                     setField(
                         field,
                         when {

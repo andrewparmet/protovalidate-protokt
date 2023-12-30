@@ -37,13 +37,12 @@ object ProtoktReflect {
     private val reflectedGettersByClass =
         CacheBuilder.newBuilder()
             .build(
-                object : CacheLoader<KClass<out KtMessage>, (FieldDescriptor, KtMessage) -> GetFieldResult>() {
+                object : CacheLoader<KClass<out KtMessage>, (FieldDescriptor, KtMessage) -> Any?>() {
                     override fun load(messageClass: KClass<out KtMessage>) =
                         { field: FieldDescriptor, message: KtMessage ->
-                            topLevelProperty(messageClass)(field, message)?.let { Found(it, false) }
-                                ?: oneofProperty(messageClass)(field, message)?.let { Found(it, false) }
-                                ?: getUnknownField(field, message)?.let { Found(it, true) }
-                                ?: NotFound
+                            topLevelProperty(messageClass)(field, message)
+                                ?: oneofProperty(messageClass)(field, message)
+                                ?: getUnknownField(field, message)
                         }
                 },
             )
@@ -144,19 +143,10 @@ object ProtoktReflect {
             }
         }
 
-    sealed interface GetFieldResult
-
-    class Found(
-        val value: Any,
-        val wasUnknown: Boolean
-    ) : GetFieldResult
-
-    data object NotFound : GetFieldResult
-
     fun getField(
         message: KtMessage,
         field: FieldDescriptor,
-    ): GetFieldResult = reflectedGettersByClass[message::class](field, message)
+    ): Any? = reflectedGettersByClass[message::class](field, message)
 }
 
 fun getUnknownFields(message: KtMessage) =
