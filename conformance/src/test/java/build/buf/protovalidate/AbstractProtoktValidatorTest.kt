@@ -327,7 +327,7 @@ abstract class AbstractProtoktValidatorTest {
 
                 while (true) {
                     when (deserializer.readTag()) {
-                        0 -> return Int64(UnknownFieldSet.from(unknownFields))
+                        0u -> return Int64(UnknownFieldSet.from(unknownFields))
                         else -> unknownFields.add(deserializer.readUnknown())
                     }
                 }
@@ -346,7 +346,7 @@ abstract class AbstractProtoktValidatorTest {
 
                 while (true) {
                     when (deserializer.readTag()) {
-                        0 -> return UInt64(UnknownFieldSet.from(unknownFields))
+                        0u -> return UInt64(UnknownFieldSet.from(unknownFields))
                         else -> unknownFields.add(deserializer.readUnknown())
                     }
                 }
@@ -365,7 +365,7 @@ abstract class AbstractProtoktValidatorTest {
 
                 while (true) {
                     when (deserializer.readTag()) {
-                        0 -> return Fixed32(UnknownFieldSet.from(unknownFields))
+                        0u -> return Fixed32(UnknownFieldSet.from(unknownFields))
                         else -> unknownFields.add(deserializer.readUnknown())
                     }
                 }
@@ -384,7 +384,7 @@ abstract class AbstractProtoktValidatorTest {
 
                 while (true) {
                     when (deserializer.readTag()) {
-                        0 -> return Fixed64(UnknownFieldSet.from(unknownFields))
+                        0u -> return Fixed64(UnknownFieldSet.from(unknownFields))
                         else -> unknownFields.add(deserializer.readUnknown())
                     }
                 }
@@ -403,7 +403,7 @@ abstract class AbstractProtoktValidatorTest {
 
                 while (true) {
                     when (deserializer.readTag()) {
-                        0 -> return LengthDelimitedString(UnknownFieldSet.from(unknownFields))
+                        0u -> return LengthDelimitedString(UnknownFieldSet.from(unknownFields))
                         else -> unknownFields.add(deserializer.readUnknown())
                     }
                 }
@@ -422,7 +422,7 @@ abstract class AbstractProtoktValidatorTest {
 
                 while (true) {
                     when (deserializer.readTag()) {
-                        0 -> return LengthDelimitedBytes(UnknownFieldSet.from(unknownFields))
+                        0u -> return LengthDelimitedBytes(UnknownFieldSet.from(unknownFields))
                         else -> unknownFields.add(deserializer.readUnknown())
                     }
                 }
@@ -441,7 +441,7 @@ abstract class AbstractProtoktValidatorTest {
 
                 while (true) {
                     when (deserializer.readTag()) {
-                        0 -> return RepeatedLengthDelimited(UnknownFieldSet.from(unknownFields))
+                        0u -> return RepeatedLengthDelimited(UnknownFieldSet.from(unknownFields))
                         else -> unknownFields.add(deserializer.readUnknown())
                     }
                 }

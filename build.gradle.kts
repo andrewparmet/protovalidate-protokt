@@ -12,7 +12,10 @@ plugins {
     alias(libs.plugins.git)
     alias(libs.plugins.maven)
     id("org.jetbrains.kotlin.jvm") version "1.9.20"
-    id("com.google.protobuf") version "0.9.4"
+}
+
+repositories {
+    mavenLocal()
 }
 
 kotlin {
@@ -183,9 +186,14 @@ tasks.withType<GenerateModuleMetadata> {
 }
 
 buildscript {
+    repositories {
+        mavenLocal()
+    }
+
     dependencies {
         classpath(libs.maven.plugin)
         classpath(libs.spotless)
+        classpath("com.toasttab.protokt:protokt-gradle-plugin:1.0.0-beta.2-SNAPSHOT")
     }
 }
 
@@ -298,19 +306,11 @@ dependencies {
     implementation(libs.ipaddress)
     implementation(libs.jakarta.mail.api)
     implementation(kotlin("reflect"))
-    implementation("com.toasttab.protokt:protokt-core:1.0.0-beta.1")
+    implementation("com.toasttab.protokt:protokt-reflect:1.0.0-beta.2-SNAPSHOT")
 
     testImplementation(libs.assertj)
     testImplementation(platform(libs.junit.bom))
     testImplementation("org.junit.jupiter:junit-jupiter")
 
     errorprone(libs.errorprone)
-
-    protobuf("com.toasttab.protokt:protokt-extensions-lite:1.0.0-beta.1")
-}
-
-protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:3.24.1"
-    }
 }

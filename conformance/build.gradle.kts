@@ -1,5 +1,6 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.google.protobuf.gradle.ProtobufExtract
+import protokt.v1.gradle.protokt
 import net.ltgt.gradle.errorprone.errorprone
 
 plugins {
@@ -9,7 +10,12 @@ plugins {
     java
     alias(libs.plugins.errorprone)
     id("org.jetbrains.kotlin.jvm") version "1.9.20"
-    id("com.toasttab.protokt") version "1.0.0-beta.1"
+}
+
+apply(plugin = "com.toasttab.protokt")
+
+repositories {
+    mavenLocal()
 }
 
 protokt {

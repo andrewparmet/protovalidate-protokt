@@ -18,10 +18,12 @@ import com.google.protobuf.Descriptors.FieldDescriptor
 import protokt.v1.Bytes
 import protokt.v1.KtEnum
 import protokt.v1.KtMessage
+import protokt.v1.google.protobuf.ProtoktReflect
+import protokt.v1.google.protobuf.RuntimeContext
 
 class ProtoktMessageLike(
     val message: KtMessage,
-    val context: ProtoktRuntimeContext,
+    val context: RuntimeContext,
 ) : MessageLike {
     override fun hasField(field: FieldDescriptor) = ProtoktReflect.getField(message, field) != null
 
@@ -35,7 +37,7 @@ class ProtoktMessageLike(
 
 class ProtoktMessageValue(
     private val message: KtMessage,
-    private val context: ProtoktRuntimeContext,
+    private val context: RuntimeContext,
 ) : Value {
     override fun messageValue() = ProtoktMessageLike(message, context)
 
@@ -51,7 +53,7 @@ class ProtoktMessageValue(
 class ProtoktObjectValue(
     private val fieldDescriptor: FieldDescriptor,
     private val value: Any,
-    private val context: ProtoktRuntimeContext,
+    private val context: RuntimeContext,
 ) : Value {
     override fun messageValue() = ProtoktMessageLike(value as KtMessage, context)
 

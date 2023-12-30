@@ -20,7 +20,6 @@ import build.buf.protovalidate.internal.evaluator.Evaluator
 import build.buf.protovalidate.internal.evaluator.EvaluatorBuilder
 import build.buf.protovalidate.internal.evaluator.ProtobufMessageValue
 import build.buf.protovalidate.internal.evaluator.ProtoktMessageValue
-import build.buf.protovalidate.internal.evaluator.ProtoktRuntimeContext
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.Descriptors
 import com.google.protobuf.Descriptors.Descriptor
@@ -30,6 +29,7 @@ import org.projectnessie.cel.Library
 import protokt.v1.KtGeneratedMessage
 import protokt.v1.KtMessage
 import protokt.v1.google.protobuf.FileDescriptor
+import protokt.v1.google.protobuf.RuntimeContext
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.jvm.Throws
 import kotlin.reflect.full.findAnnotation
@@ -88,7 +88,7 @@ class ProtoktValidator(
         ).evaluate(
             ProtoktMessageValue(
                 message,
-                ProtoktRuntimeContext(descriptorsByFullTypeName, emptyList()),
+                RuntimeContext(descriptorsByFullTypeName, emptyList()),
             ),
             failFast,
         )
@@ -99,7 +99,7 @@ class ProtoktValidator(
             message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName,
         ).evaluate(
             ProtobufMessageValue(
-                ProtoktRuntimeContext(descriptorsByFullTypeName, emptyList()).protobufJavaValue(message) as Message,
+                RuntimeContext(descriptorsByFullTypeName, emptyList()).protobufJavaValue(message) as Message,
             ),
             failFast,
         )
