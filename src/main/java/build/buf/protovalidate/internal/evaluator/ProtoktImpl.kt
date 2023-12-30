@@ -154,7 +154,7 @@ private fun dynamic(message: ProtoktMessageLike): Message {
                             when {
                                 field.type == FieldDescriptor.Type.ENUM -> {
                                     if (field.isRepeated) {
-                                        val atLeastOneIsUnknown = value.repeatedValue().any { it.jvmValue(Integer::class.java) == null }
+                                        val atLeastOneIsUnknown = value.repeatedValue().any { field.enumType.findValueByNumber(it.jvmValue(Integer::class.java)!!.toInt()) == null }
                                         if (atLeastOneIsUnknown) {
                                             // DynamicMessage insists that you use an EnumValueDescriptor to set an enum, but if the
                                             // value is unknown then a descriptor doesn't exist.
@@ -177,7 +177,7 @@ private fun dynamic(message: ProtoktMessageLike): Message {
                                     } else {
                                         // Some libraries that use reflection won't check unknown fields, e.g.
                                         // projectnessie's CEL implementation. That could be contributed.
-                                        val valueIsUnknown = value.jvmValue(Integer::class.java) == null
+                                        val valueIsUnknown = field.enumType.findValueByNumber(value.jvmValue(Integer::class.java)!!.toInt()) == null
                                         if (valueIsUnknown) {
                                             unknownFields.addField(
                                                 field.number,
