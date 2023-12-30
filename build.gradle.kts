@@ -308,3 +308,9 @@ dependencies {
 
     protobuf("com.toasttab.protokt:protokt-extensions-lite:1.0.0-beta.1")
 }
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.24.1"
+    }
+}
