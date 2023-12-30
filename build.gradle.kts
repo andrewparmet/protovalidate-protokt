@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.git)
     alias(libs.plugins.maven)
     id("org.jetbrains.kotlin.jvm") version "1.9.20"
+    id("com.google.protobuf") version "0.9.4"
 }
 
 kotlin {
@@ -304,4 +305,6 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
 
     errorprone(libs.errorprone)
+
+    protobuf("com.toasttab.protokt:protokt-extensions-lite:1.0.0-beta.1")
 }

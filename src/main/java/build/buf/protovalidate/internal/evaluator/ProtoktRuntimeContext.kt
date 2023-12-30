@@ -14,6 +14,7 @@
 
 package build.buf.protovalidate.internal.evaluator
 
+import build.buf.protovalidate.internal.evaluator.ConverterRegistry.Companion.DEFAULT_CONVERTERS
 import com.google.protobuf.Descriptors
 import com.google.protobuf.Descriptors.FieldDescriptor
 import com.google.protobuf.DynamicMessage
@@ -23,6 +24,7 @@ import com.google.protobuf.UnknownFieldSet
 import com.google.protobuf.UnknownFieldSet.Field
 import com.google.protobuf.UnsafeByteOperations
 import com.google.protobuf.WireFormat
+import com.toasttab.protokt.v1.ProtoktProtos
 import protokt.v1.Bytes
 import protokt.v1.Converter
 import protokt.v1.KtEnum
@@ -65,10 +67,10 @@ class ConverterRegistry(
     fun unwrap(
         value: Any,
         field: FieldDescriptor,
-    ) = ((DEFAULT_CONVERTERS[field.messageType.fullName] ?: convertersByWrappedType[value::class]) as Converter<Any, Any>?)?.unwrap(value)
+    ) = ((DEFAULT_CONVERTERS[field.messageType.fullName] ?: convertersByWrappedType.getValue(value::class)) as Converter<Any, Any>).unwrap(value)
 
     companion object {
-        private val DEFAULT_CONVERTERS: Map<String, Converter<*, *>> =
+        val DEFAULT_CONVERTERS: Map<String, Converter<*, *>> =
             mapOf(
                 "google.protobuf.DoubleValue" to DoubleValueConverter,
                 "google.protobuf.FloatValue" to FloatValueConverter,
@@ -111,11 +113,8 @@ private fun toDynamicMessage(
                             field.isRepeated ->
                                 (value as List<*>).map(context::protobufJavaValue)
 
-                            // todo: this won't work for wrapped simple fields
-                            // put a condition before this that checks for wraps
-                            field.type == Descriptors.FieldDescriptor.Type.MESSAGE ->
-                                (context.converterRegistry.unwrap(value, field) ?: value)
-                                    .let(context::protobufJavaValue)
+                            isWrapped(field) ->
+                                context.protobufJavaValue(context.converterRegistry.unwrap(value, field))
 
                             else -> context.protobufJavaValue(value)
                         },
@@ -123,30 +122,16 @@ private fun toDynamicMessage(
                 }
             }
         }
-        .apply {
-            val unknownFields = UnknownFieldSet.newBuilder()
-
-            getUnknownFields(message).forEach { (number, field) ->
-                unknownFields.mergeField(
-                    number.toInt(),
-                    Field.newBuilder()
-                        .apply {
-                            field.varint.forEach { addVarint(it.value.toLong()) }
-                            field.fixed32.forEach { addFixed32(it.value.toInt()) }
-                            field.fixed64.forEach { addFixed64(it.value.toLong()) }
-                            field.lengthDelimited.forEach {
-                                addLengthDelimited(
-                                    UnsafeByteOperations.unsafeWrap(it.value.asReadOnlyBuffer()),
-                                )
-                            }
-                        }
-                        .build(),
-                )
-            }
-
-            setUnknownFields(unknownFields.build())
-        }
+        .setUnknownFields(mapUnknownFields(message))
         .build()
+}
+
+private fun isWrapped(field: FieldDescriptor): Boolean {
+    val options = field.toProto().options.getExtension(ProtoktProtos.property)
+    return options.wrap.isNotEmpty() ||
+        options.keyWrap.isNotEmpty() ||
+        options.valueWrap.isNotEmpty() ||
+        (field.type == FieldDescriptor.Type.MESSAGE && field.messageType.fullName in DEFAULT_CONVERTERS)
 }
 
 private fun convertMap(
@@ -185,4 +170,28 @@ private fun convertMap(
             .setValue(context.protobufJavaValue(v))
             .build()
     }
+}
+
+private fun mapUnknownFields(message: KtMessage): UnknownFieldSet {
+    val unknownFields = UnknownFieldSet.newBuilder()
+
+    getUnknownFields(message).forEach { (number, field) ->
+        unknownFields.mergeField(
+            number.toInt(),
+            Field.newBuilder()
+                .apply {
+                    field.varint.forEach { addVarint(it.value.toLong()) }
+                    field.fixed32.forEach { addFixed32(it.value.toInt()) }
+                    field.fixed64.forEach { addFixed64(it.value.toLong()) }
+                    field.lengthDelimited.forEach {
+                        addLengthDelimited(
+                            UnsafeByteOperations.unsafeWrap(it.value.asReadOnlyBuffer()),
+                        )
+                    }
+                }
+                .build(),
+        )
+    }
+
+    return unknownFields.build()
 }
