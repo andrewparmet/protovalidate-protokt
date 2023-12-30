@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test
 import protokt.v1.AbstractKtDeserializer
 import protokt.v1.AbstractKtMessage
 import protokt.v1.KtGeneratedMessage
+import protokt.v1.KtMessage
 import protokt.v1.KtMessageDeserializer
 import protokt.v1.UnknownFieldSet
 import protokt.v1.buf.validate.conformance.cases.MessageRequiredOneof
@@ -27,38 +28,23 @@ import protokt.v1.buf.validate.conformance.cases.Oneof
 import protokt.v1.buf.validate.conformance.cases.TestMsg
 import protokt.v1.buf.validate.conformance.cases.UInt64In
 import protokt.v1.buf.validate.conformance.cases.bytes_file_descriptor
-import protokt.v1.buf.validate.conformance.cases.custom_constraints.DynRuntimeError
-import protokt.v1.buf.validate.conformance.cases.custom_constraints.custom_constraints_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.messages_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.numbers_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.oneofs_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.repeated_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.strings_file_descriptor
 
-class ProtoktValidatorTest {
-    private val validator = ProtoktValidator()
+abstract class AbstractProtoktValidatorTest {
+    protected val validator = ProtoktValidator()
 
-    @Test
-    fun `test sint64 constraint`() {
-        validator.load(custom_constraints_file_descriptor.descriptor)
-
-        val result =
-            validator.validate2(
-                DynRuntimeError {
-                    a = 123
-                },
-            )
-
-        assertThat(result.isSuccess).isFalse()
-        assertThat(result.violations).isNotEmpty()
-    }
+    abstract fun validate(message: KtMessage): ValidationResult
 
     @Test
     fun `test required oneof constraint`() {
         validator.load(messages_file_descriptor.descriptor)
 
         val result =
-            validator.validate(
+            validate(
                 MessageRequiredOneof {
                     one =
                         MessageRequiredOneof.One.Val(
@@ -78,7 +64,7 @@ class ProtoktValidatorTest {
         validator.load(oneofs_file_descriptor.descriptor)
 
         val result =
-            validator.validate(
+            validate(
                 Oneof {
                     o = Oneof.O.X("foobar")
                 },
@@ -93,7 +79,7 @@ class ProtoktValidatorTest {
         validator.load(numbers_file_descriptor.descriptor)
 
         val result =
-            validator.validate(
+            validate(
                 UInt64In {
                     `val` = 4u
                 },
@@ -107,7 +93,7 @@ class ProtoktValidatorTest {
         validator.load(numbers_file_descriptor.descriptor)
 
         val result =
-            validator.validate(
+            validate(
                 Int64.deserialize(
                     build.buf.validate.conformance.cases.Int64In
                         .newBuilder()
@@ -120,7 +106,7 @@ class ProtoktValidatorTest {
         assertThat(result.isSuccess).isFalse()
 
         val result2 =
-            validator.validate(
+            validate(
                 Int64.deserialize(
                     build.buf.validate.conformance.cases.Int64In
                         .newBuilder()
@@ -138,7 +124,7 @@ class ProtoktValidatorTest {
         validator.load(numbers_file_descriptor.descriptor)
 
         val result =
-            validator.validate(
+            validate(
                 UInt64.deserialize(
                     build.buf.validate.conformance.cases.UInt64In
                         .newBuilder()
@@ -151,7 +137,7 @@ class ProtoktValidatorTest {
         assertThat(result.isSuccess).isFalse()
 
         val result2 =
-            validator.validate(
+            validate(
                 UInt64.deserialize(
                     build.buf.validate.conformance.cases.UInt64In
                         .newBuilder()
@@ -169,7 +155,7 @@ class ProtoktValidatorTest {
         validator.load(numbers_file_descriptor.descriptor)
 
         val result =
-            validator.validate(
+            validate(
                 Fixed32.deserialize(
                     build.buf.validate.conformance.cases.Fixed32In
                         .newBuilder()
@@ -182,7 +168,7 @@ class ProtoktValidatorTest {
         assertThat(result.isSuccess).isFalse()
 
         val result2 =
-            validator.validate(
+            validate(
                 Fixed32.deserialize(
                     build.buf.validate.conformance.cases.Fixed32In
                         .newBuilder()
@@ -200,7 +186,7 @@ class ProtoktValidatorTest {
         validator.load(numbers_file_descriptor.descriptor)
 
         val result =
-            validator.validate(
+            validate(
                 Fixed64.deserialize(
                     build.buf.validate.conformance.cases.Fixed64In
                         .newBuilder()
@@ -213,7 +199,7 @@ class ProtoktValidatorTest {
         assertThat(result.isSuccess).isFalse()
 
         val result2 =
-            validator.validate(
+            validate(
                 Fixed64.deserialize(
                     build.buf.validate.conformance.cases.Fixed64In
                         .newBuilder()
@@ -231,7 +217,7 @@ class ProtoktValidatorTest {
         validator.load(strings_file_descriptor.descriptor)
 
         val result =
-            validator.validate(
+            validate(
                 LengthDelimitedString.deserialize(
                     build.buf.validate.conformance.cases.StringIn
                         .newBuilder()
@@ -244,7 +230,7 @@ class ProtoktValidatorTest {
         assertThat(result.isSuccess).isFalse()
 
         val result2 =
-            validator.validate(
+            validate(
                 LengthDelimitedString.deserialize(
                     build.buf.validate.conformance.cases.StringIn
                         .newBuilder()
@@ -262,7 +248,7 @@ class ProtoktValidatorTest {
         validator.load(bytes_file_descriptor.descriptor)
 
         val result =
-            validator.validate(
+            validate(
                 LengthDelimitedBytes.deserialize(
                     build.buf.validate.conformance.cases.BytesIn
                         .newBuilder()
@@ -275,7 +261,7 @@ class ProtoktValidatorTest {
         assertThat(result.isSuccess).isFalse()
 
         val result2 =
-            validator.validate(
+            validate(
                 LengthDelimitedBytes.deserialize(
                     build.buf.validate.conformance.cases.BytesIn
                         .newBuilder()
@@ -293,7 +279,7 @@ class ProtoktValidatorTest {
         validator.load(repeated_file_descriptor.descriptor)
 
         val result =
-            validator.validate(
+            validate(
                 RepeatedLengthDelimited.deserialize(
                     build.buf.validate.conformance.cases.RepeatedUnique
                         .newBuilder()
@@ -306,7 +292,7 @@ class ProtoktValidatorTest {
         assertThat(result.isSuccess).isFalse()
 
         val result2 =
-            validator.validate(
+            validate(
                 RepeatedLengthDelimited.deserialize(
                     build.buf.validate.conformance.cases.RepeatedUnique
                         .newBuilder()

@@ -57,6 +57,8 @@ application {
     mainClass.set(
         if (project.hasProperty("conformance-protokt")) {
             "build.buf.protovalidate.conformance.Main2"
+        } else if (project.hasProperty("conformance-protokt-dynamic")) {
+            "build.buf.protovalidate.conformance.Main3"
         } else {
             "build.buf.protovalidate.conformance.Main"
         },
