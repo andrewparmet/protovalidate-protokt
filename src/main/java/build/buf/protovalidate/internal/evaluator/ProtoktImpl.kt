@@ -145,51 +145,18 @@ private fun dynamic(message: ProtoktMessageLike): Message {
 
     return DynamicMessage.newBuilder(descriptor)
         .apply {
-            val unknownFields = UnknownFieldSet.newBuilder()
-
             descriptor.fields.forEach { field ->
                 if (message.hasField(field)) {
-                    val valueToSet =
+                    setField(
+                        field,
                         message.getField(field).let { value ->
                             when {
-                                field.type == FieldDescriptor.Type.ENUM -> {
+                                field.type == FieldDescriptor.Type.ENUM ->
                                     if (field.isRepeated) {
-                                        val atLeastOneIsUnknown = value.repeatedValue().any { field.enumType.findValueByNumber(it.jvmValue(Integer::class.java)!!.toInt()) == null }
-                                        if (atLeastOneIsUnknown) {
-                                            // DynamicMessage insists that you use an EnumValueDescriptor to set an enum, but if the
-                                            // value is unknown then a descriptor doesn't exist.
-                                            //
-                                            // To preserve list order we have to treat all enums as unknown. Some libraries that use
-                                            // reflection won't check unknown fields, e.g. projectnessie's CEL implementation. That
-                                            // could be contributed.
-                                            value.repeatedValue().forEach {
-                                                unknownFields.mergeField(
-                                                    field.number,
-                                                    UnknownFieldSet.Field.newBuilder()
-                                                        .addVarint(it.jvmValue(Integer::class.java)!!.toLong()).build()
-                                                )
-                                            }
-
-                                            null
-                                        } else {
-                                            value.repeatedValue().map { field.enumType.findValueByNumber(it.jvmValue(Integer::class.java)!!.toInt()) }
-                                        }
+                                        value.repeatedValue().map { field.enumType.findValueByNumberCreatingIfUnknown(it.jvmValue(Integer::class.java)!!.toInt()) }
                                     } else {
-                                        // Some libraries that use reflection won't check unknown fields, e.g.
-                                        // projectnessie's CEL implementation. That could be contributed.
-                                        val valueIsUnknown = field.enumType.findValueByNumber(value.jvmValue(Integer::class.java)!!.toInt()) == null
-                                        if (valueIsUnknown) {
-                                            unknownFields.addField(
-                                                field.number,
-                                                UnknownFieldSet.Field.newBuilder()
-                                                    .addVarint(value.jvmValue(Integer::class.java)!!.toLong()).build()
-                                            )
-                                            null
-                                        } else {
-                                            field.enumType.findValueByNumber(value.jvmValue(Integer::class.java)!!.toInt())
-                                        }
+                                        field.enumType.findValueByNumberCreatingIfUnknown(value.jvmValue(Integer::class.java)!!.toInt())
                                     }
-                                }
 
                                 field.isMapField -> {
                                     val keyDesc = field.messageType.findFieldByNumber(1)
@@ -256,14 +223,9 @@ private fun dynamic(message: ProtoktMessageLike): Message {
                                 else -> value.jvmValue(Any::class.java)
                             }
                         }
-
-                    if (valueToSet != null) {
-                        setField(field, valueToSet)
-                    }
+                    )
                 }
             }
-
-            setUnknownFields(unknownFields.build())
         }
         .build()
 }
