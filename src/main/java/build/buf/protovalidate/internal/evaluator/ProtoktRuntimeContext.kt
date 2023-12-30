@@ -43,10 +43,9 @@ import kotlin.reflect.full.findAnnotation
 
 class ProtoktRuntimeContext(
     val descriptorsByFullTypeName: Map<String, Descriptors.Descriptor>,
-    converters: Iterable<Converter<*, *>>
+    converters: Iterable<Converter<*, *>>,
 ) {
     private val convertersByWrappedType = converters.associateBy { it.wrapper }
-
 
     fun protobufJavaValue(value: Any?) =
         when (value) {
@@ -64,7 +63,9 @@ class ProtoktRuntimeContext(
     fun unwrap(
         value: Any,
         field: FieldDescriptor,
-    ) = ((DEFAULT_CONVERTERS[field.messageType.fullName] ?: convertersByWrappedType.getValue(value::class)) as Converter<Any, Any>).unwrap(value)
+    ) = ((DEFAULT_CONVERTERS[field.messageType.fullName] ?: convertersByWrappedType.getValue(value::class)) as Converter<Any, Any>).unwrap(
+        value,
+    )
 
     companion object {
         val DEFAULT_CONVERTERS: Map<String, Converter<*, *>> =

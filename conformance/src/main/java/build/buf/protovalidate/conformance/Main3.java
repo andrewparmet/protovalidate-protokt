@@ -94,7 +94,6 @@ public class Main3 {
       for (Descriptors.Descriptor it : descriptors) {
         validator.load(it, message);
       }
-      System.err.println("executing test for message of type " + message.getClass());
       ValidationResult result = validator.validate2(message);
       List<Violation> violations = result.getViolations();
       if (ProtoktShortCircuit.shortCircuitFailure(message, input)) {
