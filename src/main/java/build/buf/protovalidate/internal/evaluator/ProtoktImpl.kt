@@ -150,29 +150,45 @@ private fun dynamic(message: ProtoktMessageLike): Message {
             descriptor.fields.forEach { field ->
                 if (message.hasField(field)) {
                     val valueToSet =
-                        message.getField(field).let {
+                        message.getField(field).let { value ->
                             when {
                                 field.type == FieldDescriptor.Type.ENUM -> {
-                                    val value =
-                                        if (field.isRepeated) {
-                                            it.repeatedValue()
+                                    if (field.isRepeated) {
+                                        val atLeastOneIsUnknown = value.repeatedValue().any { it.jvmValue(Integer::class.java) == null }
+                                        if (atLeastOneIsUnknown) {
+                                            // DynamicMessage insists that you use an EnumValueDescriptor to set an enum, but if the
+                                            // value is unknown then a descriptor doesn't exist.
+                                            //
+                                            // To preserve list order we have to treat all enums as unknown. Some libraries that use
+                                            // reflection won't check unknown fields, e.g. projectnessie's CEL implementation. That
+                                            // could be contributed.
+                                            value.repeatedValue().forEach {
+                                                unknownFields.mergeField(
+                                                    field.number,
+                                                    UnknownFieldSet.Field.newBuilder()
+                                                        .addVarint(it.jvmValue(Integer::class.java)!!.toLong()).build()
+                                                )
+                                            }
+
+                                            null
                                         } else {
-                                            listOf(it)
+                                            value.repeatedValue().map { field.enumType.findValueByNumber(it.jvmValue(Integer::class.java)!!.toInt()) }
                                         }
-
-                                    // DynamicMessage insists that you use an EnumValueDescriptor to set an enum, but if the
-                                    // value is unknown then a descriptor doesn't exist.
-                                    //
-                                    // To preserve list order we have to treat all enums as unknown.
-                                    value.forEach {
-                                        unknownFields.mergeField(
-                                            field.number,
-                                            UnknownFieldSet.Field.newBuilder()
-                                                .addVarint(it.jvmValue(Integer::class.java)!!.toLong()).build()
-                                        )
+                                    } else {
+                                        // Some libraries that use reflection won't check unknown fields, e.g.
+                                        // projectnessie's CEL implementation. That could be contributed.
+                                        val valueIsUnknown = value.jvmValue(Integer::class.java) == null
+                                        if (valueIsUnknown) {
+                                            unknownFields.addField(
+                                                field.number,
+                                                UnknownFieldSet.Field.newBuilder()
+                                                    .addVarint(value.jvmValue(Integer::class.java)!!.toLong()).build()
+                                            )
+                                            null
+                                        } else {
+                                            field.enumType.findValueByNumber(value.jvmValue(Integer::class.java)!!.toInt())
+                                        }
                                     }
-
-                                    null
                                 }
 
                                 field.isMapField -> {
@@ -201,7 +217,7 @@ private fun dynamic(message: ProtoktMessageLike): Message {
                                             valDefault,
                                         ) as MapEntry<Any?, Any?>
 
-                                    (it.mapValue()).map { (k, v) ->
+                                    (value.mapValue()).map { (k, v) ->
                                         defaultEntry.toBuilder()
                                             .setKey(k.jvmValue(Any::class.java))
                                             .setValue(v.jvmValue(Any::class.java))
@@ -210,34 +226,34 @@ private fun dynamic(message: ProtoktMessageLike): Message {
                                 }
 
                                 field.isRepeated ->
-                                    it.repeatedValue().map { elem -> elem.jvmValue(Any::class.java) }
+                                    value.repeatedValue().map { it.jvmValue(Any::class.java) }
 
                                 field.type == FieldDescriptor.Type.MESSAGE -> {
                                     // todo: proper wrapper type registry
                                     when (field.messageType.fullName) {
                                         "google.protobuf.DoubleValue" ->
-                                            DoubleValue.newBuilder().setValue(it.jvmValue(java.lang.Double::class.java)!!.toDouble()).build()
+                                            DoubleValue.newBuilder().setValue(value.jvmValue(java.lang.Double::class.java)!!.toDouble()).build()
                                         "google.protobuf.FloatValue" ->
-                                            FloatValue.newBuilder().setValue(it.jvmValue(java.lang.Float::class.java)!!.toFloat()).build()
+                                            FloatValue.newBuilder().setValue(value.jvmValue(java.lang.Float::class.java)!!.toFloat()).build()
                                         "google.protobuf.Int64Value" ->
-                                            Int64Value.newBuilder().setValue(it.jvmValue(java.lang.Long::class.java)!!.toLong()).build()
+                                            Int64Value.newBuilder().setValue(value.jvmValue(java.lang.Long::class.java)!!.toLong()).build()
                                         "google.protobuf.UInt64Value" ->
-                                            UInt64Value.newBuilder().setValue(it.jvmValue(java.lang.Long::class.java)!!.toLong()).build()
+                                            UInt64Value.newBuilder().setValue(value.jvmValue(java.lang.Long::class.java)!!.toLong()).build()
                                         "google.protobuf.Int32Value" ->
-                                            Int32Value.newBuilder().setValue(it.jvmValue(Integer::class.java)!!.toInt()).build()
+                                            Int32Value.newBuilder().setValue(value.jvmValue(Integer::class.java)!!.toInt()).build()
                                         "google.protobuf.UInt32Value" ->
-                                            UInt32Value.newBuilder().setValue(it.jvmValue(Integer::class.java)!!.toInt()).build()
+                                            UInt32Value.newBuilder().setValue(value.jvmValue(Integer::class.java)!!.toInt()).build()
                                         "google.protobuf.BoolValue" ->
-                                            BoolValue.newBuilder().setValue(it.jvmValue(java.lang.Boolean::class.java)!!.booleanValue()).build()
+                                            BoolValue.newBuilder().setValue(value.jvmValue(java.lang.Boolean::class.java)!!.booleanValue()).build()
                                         "google.protobuf.StringValue" ->
-                                            StringValue.newBuilder().setValue(it.jvmValue(String::class.java)).build()
+                                            StringValue.newBuilder().setValue(value.jvmValue(String::class.java)).build()
                                         "google.protobuf.BytesValue" ->
-                                            BytesValue.newBuilder().setValue(it.jvmValue(ByteString::class.java)).build()
-                                        else -> it.jvmValue(Any::class.java)
+                                            BytesValue.newBuilder().setValue(value.jvmValue(ByteString::class.java)).build()
+                                        else -> value.jvmValue(Any::class.java)
                                     }
                                 }
 
-                                else -> it.jvmValue(Any::class.java)
+                                else -> value.jvmValue(Any::class.java)
                             }
                         }
 

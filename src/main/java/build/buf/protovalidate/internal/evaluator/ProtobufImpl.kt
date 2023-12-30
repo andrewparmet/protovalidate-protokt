@@ -30,16 +30,11 @@ class ProtobufMessageLike(
 
     override fun getField(field: FieldDescriptor) =
         if (field.type == FieldDescriptor.Type.ENUM && message.unknownFields.hasField(field.number)) {
-            val unknownFields = message.unknownFields
-            if (unknownFields.hasField(field.number)) {
-                val enums = (unknownFields.getField(field.number) as UnknownFieldSet.Field).varintList
-                if (field.isRepeated) {
-                    ProtobufObjectValue(field, enums.map { java.lang.Long.valueOf(it).toInt() })
-                } else {
-                    ProtobufObjectValue(field, enums.last().let { java.lang.Long.valueOf(it).toInt() })
-                }
+            val enums = (message.unknownFields.getField(field.number) as UnknownFieldSet.Field).varintList
+            if (field.isRepeated) {
+                ProtobufObjectValue(field, enums.map { java.lang.Long.valueOf(it).toInt() })
             } else {
-                ProtobufObjectValue(field, message.getField(field))
+                ProtobufObjectValue(field, enums.last().let { java.lang.Long.valueOf(it).toInt() })
             }
         } else {
             ProtobufObjectValue(field, message.getField(field))
