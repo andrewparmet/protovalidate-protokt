@@ -18,7 +18,9 @@ import build.buf.protovalidate.exceptions.ValidationException
 import build.buf.protovalidate.internal.celext.ValidateLibrary
 import build.buf.protovalidate.internal.evaluator.Evaluator
 import build.buf.protovalidate.internal.evaluator.EvaluatorBuilder
+import build.buf.protovalidate.internal.evaluator.ProtobufMessageValue
 import build.buf.protovalidate.internal.evaluator.ProtoktMessageValue
+import build.buf.protovalidate.internal.evaluator.toDynamicMessage
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.Descriptors
 import com.google.protobuf.Descriptors.Descriptor
@@ -83,6 +85,17 @@ class ProtoktValidator(
             ProtoktMessageValue(
                 message,
                 descriptorsByFullTypeName
+            ),
+            failFast
+        )
+
+    @Throws(ValidationException::class)
+    fun validate2(message: KtMessage): ValidationResult =
+        evaluatorsByFullTypeName.getValue(
+            message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName
+        ).evaluate(
+            ProtobufMessageValue(
+                toDynamicMessage(message, descriptorsByFullTypeName),
             ),
             failFast
         )

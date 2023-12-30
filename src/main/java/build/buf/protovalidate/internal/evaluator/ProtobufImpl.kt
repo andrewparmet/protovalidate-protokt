@@ -16,6 +16,7 @@ package build.buf.protovalidate.internal.evaluator
 
 import com.google.protobuf.Descriptors.FieldDescriptor
 import com.google.protobuf.Message
+import com.google.protobuf.UnknownFieldSet
 
 class ProtobufMessageLike(
     val message: Message
@@ -24,8 +25,23 @@ class ProtobufMessageLike(
         message.getRepeatedFieldCount(field)
 
     override fun hasField(field: FieldDescriptor) =
-        message.hasField(field)
+        message.hasField(field) ||
+            (field.type == FieldDescriptor.Type.ENUM && message.unknownFields.hasField(field.number))
 
     override fun getField(field: FieldDescriptor) =
-        ProtobufObjectValue(field, message.getField(field))
+        if (field.type == FieldDescriptor.Type.ENUM && message.unknownFields.hasField(field.number)) {
+            val unknownFields = message.unknownFields
+            if (unknownFields.hasField(field.number)) {
+                val enums = (unknownFields.getField(field.number) as UnknownFieldSet.Field).varintList
+                if (field.isRepeated) {
+                    ProtobufObjectValue(field, enums.map { java.lang.Long.valueOf(it).toInt() })
+                } else {
+                    ProtobufObjectValue(field, enums.last().let { java.lang.Long.valueOf(it).toInt() })
+                }
+            } else {
+                ProtobufObjectValue(field, message.getField(field))
+            }
+        } else {
+            ProtobufObjectValue(field, message.getField(field))
+        }
 }

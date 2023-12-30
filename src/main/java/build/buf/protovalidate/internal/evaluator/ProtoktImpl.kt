@@ -14,11 +14,23 @@
 
 package build.buf.protovalidate.internal.evaluator
 
+import com.google.protobuf.BoolValue
 import com.google.protobuf.ByteString
+import com.google.protobuf.BytesValue
 import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.Descriptors.FieldDescriptor
+import com.google.protobuf.DoubleValue
 import com.google.protobuf.DynamicMessage
+import com.google.protobuf.FloatValue
+import com.google.protobuf.Int32Value
+import com.google.protobuf.Int64Value
+import com.google.protobuf.MapEntry
 import com.google.protobuf.Message
+import com.google.protobuf.StringValue
+import com.google.protobuf.UInt32Value
+import com.google.protobuf.UInt64Value
+import com.google.protobuf.UnknownFieldSet
+import com.google.protobuf.WireFormat
 import org.projectnessie.cel.common.ULong
 import protokt.v1.Bytes
 import protokt.v1.KtEnum
@@ -111,15 +123,19 @@ class ProtoktObjectValue(
             else -> value
         }
 
-    override fun <T : Any> jvmValue(clazz: Class<T>): T =
+    override fun <T : Any> jvmValue(clazz: Class<T>): T? =
         when (value) {
             is KtEnum -> value.value
             is UInt -> value.toInt()
             is kotlin.ULong -> value.toLong()
+            is KtMessage -> dynamic(ProtoktMessageLike(value, descriptorsByFullTypeName))
+
+            // todo: support Bytes in CEL
+            is Bytes -> ByteString.copyFrom(value.asReadOnlyBuffer())
 
             // pray
             else -> value
-        }.let(clazz::cast)
+        }?.let(clazz::cast)
 }
 
 private fun dynamic(message: ProtoktMessageLike): Message {
@@ -129,24 +145,112 @@ private fun dynamic(message: ProtoktMessageLike): Message {
 
     return DynamicMessage.newBuilder(descriptor)
         .apply {
+            val unknownFields = UnknownFieldSet.newBuilder()
+
             descriptor.fields.forEach { field ->
                 if (message.hasField(field)) {
-                    setField(
-                        field,
-                        message.getField(field).jvmValue(Any::class.java).let {
-                            when (field.type) {
-                                FieldDescriptor.Type.ENUM ->
-                                    field.enumType.findValueByNumber(it as Int)
+                    val valueToSet =
+                        message.getField(field).let {
+                            when {
+                                field.type == FieldDescriptor.Type.ENUM -> {
+                                    val value =
+                                        if (field.isRepeated) {
+                                            it.repeatedValue()
+                                        } else {
+                                            listOf(it)
+                                        }
 
-                                FieldDescriptor.Type.MESSAGE ->
-                                    dynamic(ProtoktMessageLike(it as KtMessage, message.descriptorsByFullTypeName))
+                                    // DynamicMessage insists that you use an EnumValueDescriptor to set an enum, but if the
+                                    // value is unknown then a descriptor doesn't exist.
+                                    //
+                                    // To preserve list order we have to treat all enums as unknown.
+                                    value.forEach {
+                                        unknownFields.mergeField(
+                                            field.number,
+                                            UnknownFieldSet.Field.newBuilder()
+                                                .addVarint(it.jvmValue(Integer::class.java)!!.toLong()).build()
+                                        )
+                                    }
 
-                                else -> it
+                                    null
+                                }
+
+                                field.isMapField -> {
+                                    val keyDesc = field.messageType.findFieldByNumber(1)
+                                    val valDesc = field.messageType.findFieldByNumber(2)
+                                    val keyDefault =
+                                        if (keyDesc.type == FieldDescriptor.Type.MESSAGE) {
+                                            null
+                                        } else {
+                                            keyDesc.defaultValue
+                                        }
+
+                                    val valDefault =
+                                        if (valDesc.type == FieldDescriptor.Type.MESSAGE) {
+                                            null
+                                        } else {
+                                            valDesc.defaultValue
+                                        }
+
+                                    val defaultEntry =
+                                        MapEntry.newDefaultInstance(
+                                            field.messageType,
+                                            WireFormat.FieldType.valueOf(keyDesc.type.name),
+                                            keyDefault,
+                                            WireFormat.FieldType.valueOf(valDesc.type.name),
+                                            valDefault,
+                                        ) as MapEntry<Any?, Any?>
+
+                                    (it.mapValue()).map { (k, v) ->
+                                        defaultEntry.toBuilder()
+                                            .setKey(k.jvmValue(Any::class.java))
+                                            .setValue(v.jvmValue(Any::class.java))
+                                            .build()
+                                    }
+                                }
+
+                                field.isRepeated ->
+                                    it.repeatedValue().map { elem -> elem.jvmValue(Any::class.java) }
+
+                                field.type == FieldDescriptor.Type.MESSAGE -> {
+                                    // todo: proper wrapper type registry
+                                    when (field.messageType.fullName) {
+                                        "google.protobuf.DoubleValue" ->
+                                            DoubleValue.newBuilder().setValue(it.jvmValue(java.lang.Double::class.java)!!.toDouble()).build()
+                                        "google.protobuf.FloatValue" ->
+                                            FloatValue.newBuilder().setValue(it.jvmValue(java.lang.Float::class.java)!!.toFloat()).build()
+                                        "google.protobuf.Int64Value" ->
+                                            Int64Value.newBuilder().setValue(it.jvmValue(java.lang.Long::class.java)!!.toLong()).build()
+                                        "google.protobuf.UInt64Value" ->
+                                            UInt64Value.newBuilder().setValue(it.jvmValue(java.lang.Long::class.java)!!.toLong()).build()
+                                        "google.protobuf.Int32Value" ->
+                                            Int32Value.newBuilder().setValue(it.jvmValue(Integer::class.java)!!.toInt()).build()
+                                        "google.protobuf.UInt32Value" ->
+                                            UInt32Value.newBuilder().setValue(it.jvmValue(Integer::class.java)!!.toInt()).build()
+                                        "google.protobuf.BoolValue" ->
+                                            BoolValue.newBuilder().setValue(it.jvmValue(java.lang.Boolean::class.java)!!.booleanValue()).build()
+                                        "google.protobuf.StringValue" ->
+                                            StringValue.newBuilder().setValue(it.jvmValue(String::class.java)).build()
+                                        "google.protobuf.BytesValue" ->
+                                            BytesValue.newBuilder().setValue(it.jvmValue(ByteString::class.java)).build()
+                                        else -> it.jvmValue(Any::class.java)
+                                    }
+                                }
+
+                                else -> it.jvmValue(Any::class.java)
                             }
                         }
-                    )
+
+                    if (valueToSet != null) {
+                        setField(field, valueToSet)
+                    }
                 }
             }
+
+            setUnknownFields(unknownFields.build())
         }
         .build()
 }
+
+fun toDynamicMessage(message: KtMessage, descriptorsByFullTypeName: Map<String, Descriptor>) =
+    dynamic(ProtoktMessageLike(message, descriptorsByFullTypeName))

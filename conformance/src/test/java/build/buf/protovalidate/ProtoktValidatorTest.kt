@@ -22,29 +22,38 @@ import protokt.v1.AbstractKtMessage
 import protokt.v1.KtGeneratedMessage
 import protokt.v1.KtMessageDeserializer
 import protokt.v1.UnknownFieldSet
+import protokt.v1.buf.validate.conformance.cases.EnumDefined
+import protokt.v1.buf.validate.conformance.cases.MapRecursive
 import protokt.v1.buf.validate.conformance.cases.MessageRequiredOneof
 import protokt.v1.buf.validate.conformance.cases.Oneof
+import protokt.v1.buf.validate.conformance.cases.RepeatedEmbeddedEnumNotIn
 import protokt.v1.buf.validate.conformance.cases.SInt64GT
+import protokt.v1.buf.validate.conformance.cases.StringHttpHeaderName
+import protokt.v1.buf.validate.conformance.cases.TestEnum
 import protokt.v1.buf.validate.conformance.cases.TestMsg
 import protokt.v1.buf.validate.conformance.cases.UInt64In
+import protokt.v1.buf.validate.conformance.cases.WrapperInt32
 import protokt.v1.buf.validate.conformance.cases.bytes_file_descriptor
+import protokt.v1.buf.validate.conformance.cases.enums_file_descriptor
+import protokt.v1.buf.validate.conformance.cases.maps_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.messages_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.numbers_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.oneofs_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.repeated_file_descriptor
 import protokt.v1.buf.validate.conformance.cases.strings_file_descriptor
+import protokt.v1.buf.validate.conformance.cases.wkt_wrappers_file_descriptor
 
 class ProtoktValidatorTest {
     private val validator = ProtoktValidator()
 
     @Test
     fun `test sint64 constraint`() {
-        validator.load(numbers_file_descriptor.descriptor)
+        validator.load(enums_file_descriptor.descriptor)
 
         val result =
-            validator.validate(
-                SInt64GT {
-                    `val` = 14
+            validator.validate2(
+                EnumDefined {
+                    `val` = TestEnum.from(2147483647)
                 }
             )
 
