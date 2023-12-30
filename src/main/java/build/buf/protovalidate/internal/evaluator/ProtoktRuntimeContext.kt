@@ -14,7 +14,7 @@
 
 package build.buf.protovalidate.internal.evaluator
 
-import build.buf.protovalidate.internal.evaluator.ConverterRegistry.Companion.DEFAULT_CONVERTERS
+import build.buf.protovalidate.internal.evaluator.ProtoktRuntimeContext.Companion.DEFAULT_CONVERTERS
 import com.google.protobuf.Descriptors
 import com.google.protobuf.Descriptors.FieldDescriptor
 import com.google.protobuf.DynamicMessage
@@ -43,8 +43,11 @@ import kotlin.reflect.full.findAnnotation
 
 class ProtoktRuntimeContext(
     val descriptorsByFullTypeName: Map<String, Descriptors.Descriptor>,
-    val converterRegistry: ConverterRegistry,
+    converters: Iterable<Converter<*, *>>
 ) {
+    private val convertersByWrappedType = converters.associateBy { it.wrapper }
+
+
     fun protobufJavaValue(value: Any?) =
         when (value) {
             is KtEnum -> value.value
@@ -56,12 +59,6 @@ class ProtoktRuntimeContext(
             // pray
             else -> value
         }
-}
-
-class ConverterRegistry(
-    converters: Iterable<Converter<*, *>>,
-) {
-    private val convertersByWrappedType = converters.associateBy { it.wrapper }
 
     @Suppress("UNCHECKED_CAST")
     fun unwrap(
@@ -114,7 +111,7 @@ private fun toDynamicMessage(
                                 (value as List<*>).map(context::protobufJavaValue)
 
                             isWrapped(field) ->
-                                context.protobufJavaValue(context.converterRegistry.unwrap(value, field))
+                                context.protobufJavaValue(context.unwrap(value, field))
 
                             else -> context.protobufJavaValue(value)
                         },

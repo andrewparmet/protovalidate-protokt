@@ -16,7 +16,6 @@ package build.buf.protovalidate
 
 import build.buf.protovalidate.exceptions.ValidationException
 import build.buf.protovalidate.internal.celext.ValidateLibrary
-import build.buf.protovalidate.internal.evaluator.ConverterRegistry
 import build.buf.protovalidate.internal.evaluator.Evaluator
 import build.buf.protovalidate.internal.evaluator.EvaluatorBuilder
 import build.buf.protovalidate.internal.evaluator.ProtobufMessageValue
@@ -89,7 +88,7 @@ class ProtoktValidator(
         ).evaluate(
             ProtoktMessageValue(
                 message,
-                ProtoktRuntimeContext(descriptorsByFullTypeName, ConverterRegistry(emptyList())),
+                ProtoktRuntimeContext(descriptorsByFullTypeName, emptyList()),
             ),
             failFast,
         )
@@ -100,7 +99,7 @@ class ProtoktValidator(
             message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName,
         ).evaluate(
             ProtobufMessageValue(
-                ProtoktRuntimeContext(descriptorsByFullTypeName, ConverterRegistry(emptyList())).protobufJavaValue(message) as Message,
+                ProtoktRuntimeContext(descriptorsByFullTypeName, emptyList()).protobufJavaValue(message) as Message,
             ),
             failFast,
         )
