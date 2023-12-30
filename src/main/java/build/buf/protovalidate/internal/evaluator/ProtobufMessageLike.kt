@@ -20,8 +20,6 @@ import com.google.protobuf.Message
 class ProtobufMessageLike(
     val message: Message,
 ) : MessageLike {
-    override fun getRepeatedFieldCount(field: FieldDescriptor) = message.getRepeatedFieldCount(field)
-
     override fun hasField(field: FieldDescriptor) = message.hasField(field)
 
     override fun getField(field: FieldDescriptor) = ProtobufObjectValue(field, message.getField(field))

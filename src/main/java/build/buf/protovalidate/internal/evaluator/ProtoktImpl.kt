@@ -23,15 +23,6 @@ class ProtoktMessageLike(
     val message: KtMessage,
     val context: ProtoktRuntimeContext,
 ) : MessageLike {
-    override fun getRepeatedFieldCount(field: FieldDescriptor): Int {
-        val value = ProtoktReflect.getField(message, field)
-        return if (value is List<*>) {
-            value.size
-        } else {
-            (value as Map<*, *>).size
-        }
-    }
-
     override fun hasField(field: FieldDescriptor) = ProtoktReflect.getField(message, field) != null
 
     override fun getField(field: FieldDescriptor) =

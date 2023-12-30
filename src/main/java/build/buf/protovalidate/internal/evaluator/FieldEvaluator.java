@@ -63,7 +63,11 @@ class FieldEvaluator implements Evaluator {
     }
     boolean hasField;
     if (descriptor.isRepeated()) {
-      hasField = message.getRepeatedFieldCount(descriptor) != 0;
+      if (descriptor.isMapField()) {
+        hasField = !message.getField(descriptor).mapValue().isEmpty();
+      } else {
+        hasField = !message.getField(descriptor).repeatedValue().isEmpty();
+      }
     } else {
       hasField = message.hasField(descriptor);
     }
