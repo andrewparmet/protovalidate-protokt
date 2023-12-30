@@ -29,7 +29,7 @@ clean:  ## Delete intermediate build artifacts
 
 .PHONY: conformance
 conformance: ## Execute conformance tests.
-	./gradlew conformance:conformance && ./gradlew conformance:conformance -Pconformance-protokt && ./gradlew conformance:conformance -Pconformance-protokt-dynamic
+	./gradlew conformance:conformance
 
 .PHONY: help
 help: ## Describe useful make targets

@@ -26,3 +26,7 @@ jobs:
           cache: 'gradle'
       - name: Test conformance
         run: make conformance
+      - name: Test protokt conformance
+        run: ./gradlew conformance:conformance -Pconformance-protokt
+      - name: Test protokt dynamic message conformance
+        run: ./gradlew conformance:conformance -Pconformance-protokt-dynamic
