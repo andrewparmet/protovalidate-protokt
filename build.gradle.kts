@@ -14,7 +14,7 @@ buildscript {
     dependencies {
         classpath(libs.maven.plugin)
         classpath(libs.spotless)
-        classpath("com.toasttab.protokt:protokt-gradle-plugin:1.0.0-beta.1-SNAPSHOT")
+        classpath("com.toasttab.protokt:protokt-gradle-plugin:1.0.0-beta.1")
     }
 }
 
