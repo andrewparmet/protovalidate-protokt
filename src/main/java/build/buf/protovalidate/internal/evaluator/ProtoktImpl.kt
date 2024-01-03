@@ -25,7 +25,7 @@ class ProtoktMessageLike(
     val message: KtMessage,
     val context: RuntimeContext,
 ) : MessageLike {
-    override fun hasField(field: FieldDescriptor) = ProtoktReflect.getField(message, field) != null
+    override fun hasField(field: FieldDescriptor) = ProtoktReflect.hasField(message, field)
 
     override fun getField(field: FieldDescriptor) =
         ProtoktObjectValue(
@@ -45,7 +45,7 @@ class ProtoktMessageValue(
 
     override fun mapValue() = emptyMap<Value, Value>()
 
-    override fun celValue() = context.protobufJavaValue(message)
+    override fun celValue() = context.convertValue(message)
 
     override fun <T : Any> jvmValue(clazz: Class<T>) = null
 }
@@ -78,11 +78,11 @@ class ProtoktObjectValue(
             is KtEnum -> value.value
             is UInt -> org.projectnessie.cel.common.ULong.valueOf(value.toLong())
             is ULong -> org.projectnessie.cel.common.ULong.valueOf(value.toLong())
-            is KtMessage, is Bytes -> context.protobufJavaValue(value)
+            is KtMessage, is Bytes -> context.convertValue(value)
 
             // pray
             else -> value
         }
 
-    override fun <T : Any> jvmValue(clazz: Class<T>): T? = context.protobufJavaValue(value)?.let(clazz::cast)
+    override fun <T : Any> jvmValue(clazz: Class<T>): T? = context.convertValue(value)?.let(clazz::cast)
 }

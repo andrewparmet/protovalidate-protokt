@@ -82,27 +82,20 @@ public class Main2 {
     ByteString testCaseValue = testCase.getValue();
     KtMessage message =
         DynamicConcreteKtMessageDeserializer.parse(fullName, testCaseValue.newInput());
-    return validate(validator, message, fileDescriptors.values(), testCaseValue);
+    return validate(validator, message, fileDescriptors.values());
   }
 
   private static TestResult validate(
       ProtoktValidator validator,
       KtMessage message,
-      Iterable<Descriptors.Descriptor> descriptors,
-      ByteString input) {
+      Iterable<Descriptors.Descriptor> descriptors) {
     try {
       for (Descriptors.Descriptor it : descriptors) {
         validator.load(it, message);
       }
       ValidationResult result = validator.validate(message);
       List<Violation> violations = result.getViolations();
-      if (ProtoktShortCircuit.shortCircuitFailure(message, input)) {
-        return TestResult.newBuilder()
-            .setValidationError(
-                Violations.newBuilder().addViolations(Violation.newBuilder().build()).build())
-            .build();
-      }
-      if (violations.isEmpty() || ProtoktShortCircuit.shortCircuit(message, input)) {
+      if (violations.isEmpty()) {
         return TestResult.newBuilder().setSuccess(true).build();
       }
       Violations error = Violations.newBuilder().addAllViolations(violations).build();
@@ -112,7 +105,6 @@ public class Main2 {
     } catch (ExecutionException e) {
       return TestResult.newBuilder().setRuntimeError(e.getMessage()).build();
     } catch (Exception e) {
-      e.printStackTrace();
       return unexpectedErrorResult("unknown error: %s", e.toString());
     }
   }

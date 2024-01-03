@@ -30,6 +30,7 @@ import protokt.v1.KtGeneratedMessage
 import protokt.v1.KtMessage
 import protokt.v1.google.protobuf.FileDescriptor
 import protokt.v1.google.protobuf.RuntimeContext
+import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.jvm.Throws
 import kotlin.reflect.full.findAnnotation
@@ -46,7 +47,7 @@ class ProtoktValidator(
     private val failFast = config.isFailFast
 
     private val evaluatorsByFullTypeName = ConcurrentHashMap<String, Evaluator>()
-    private val descriptorsByFullTypeName = ConcurrentHashMap<String, Descriptor>()
+    private val descriptors = Collections.synchronizedList(mutableListOf<Descriptor>())
 
     fun load(descriptor: FileDescriptor) {
         descriptor
@@ -60,7 +61,7 @@ class ProtoktValidator(
         descriptor: Descriptor,
         message: KtMessage? = null,
     ) {
-        descriptorsByFullTypeName[descriptor.fullName] = descriptor
+        descriptors.add(descriptor)
         try {
             evaluatorsByFullTypeName[descriptor.fullName] = evaluatorBuilder.load(descriptor)
         } catch (ex: Exception) {
@@ -88,7 +89,7 @@ class ProtoktValidator(
         ).evaluate(
             ProtoktMessageValue(
                 message,
-                RuntimeContext(descriptorsByFullTypeName, emptyList()),
+                RuntimeContext(descriptors),
             ),
             failFast,
         )
@@ -98,9 +99,7 @@ class ProtoktValidator(
         evaluatorsByFullTypeName.getValue(
             message::class.findAnnotation<KtGeneratedMessage>()!!.fullTypeName,
         ).evaluate(
-            ProtobufMessageValue(
-                RuntimeContext(descriptorsByFullTypeName, emptyList()).protobufJavaValue(message) as Message,
-            ),
+            ProtobufMessageValue(RuntimeContext(descriptors).convertValue(message) as Message),
             failFast,
         )
 }
