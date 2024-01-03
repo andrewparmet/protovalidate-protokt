@@ -30,17 +30,7 @@ public interface Value {
    * @return The underlying {@link Message} value. null if the underlying value is not a {@link
    *     Message} type.
    */
-  @Nullable
-  Message messageValue();
-
-  /**
-   * Get the underlying value and cast it to the class type.
-   *
-   * @param clazz The inferred class.
-   * @return The value casted to the inferred class type.
-   * @param <T> The class type.
-   */
-  <T> T value(Class<T> clazz);
+  MessageLike messageValue();
 
   /**
    * Get the underlying value as a list.
@@ -57,4 +47,22 @@ public interface Value {
    *     list.
    */
   Map<Value, Value> mapValue();
+
+  /**
+   * Get the underlying value as it should be provided to CEL.
+   *
+   * @return The underlying value as a CEL-compatible type.
+   */
+  Object celValue();
+
+  /**
+   * Get the underlying value and cast it to the class type, which will be a type checkable
+   * internally by protovalidate-java.
+   *
+   * @param clazz The inferred class.
+   * @return The value cast to the inferred class type.
+   * @param <T> The class type.
+   */
+  @Nullable
+  <T> T jvmValue(Class<T> clazz);
 }

@@ -1,4 +1,6 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
+import com.google.protobuf.gradle.ProtobufExtract
+import protokt.v1.gradle.protokt
 import net.ltgt.gradle.errorprone.errorprone
 
 plugins {
@@ -7,6 +9,17 @@ plugins {
     application
     java
     alias(libs.plugins.errorprone)
+    id("org.jetbrains.kotlin.jvm") version "1.9.20"
+}
+
+apply(plugin = "com.toasttab.protokt")
+
+repositories {
+    mavenLocal()
+}
+
+protokt {
+    formatOutput = false
 }
 
 val conformanceCLIFile = project.layout.buildDirectory.file("gobin/protovalidate-conformance").get().asFile
@@ -47,7 +60,15 @@ tasks.withType<Javadoc> {
 }
 
 application {
-    mainClass.set("build.buf.protovalidate.conformance.Main")
+    mainClass.set(
+        if (project.hasProperty("conformance-protokt")) {
+            "build.buf.protovalidate.conformance.Main2"
+        } else if (project.hasProperty("conformance-protokt-dynamic")) {
+            "build.buf.protovalidate.conformance.Main3"
+        } else {
+            "build.buf.protovalidate.conformance.Main"
+        },
+    )
 }
 
 tasks {
@@ -74,16 +95,28 @@ configure<SpotlessExtension> {
     java {
         targetExclude("src/main/java/build/buf/validate/**/*.java")
     }
+    kotlin {
+        ktlint()
+        targetExclude("build/generated/**")
+    }
 }
 
 dependencies {
     implementation(project(":"))
     implementation(libs.guava)
     implementation(libs.protobuf.java)
+    implementation("io.github.classgraph:classgraph:4.8.153")
+    implementation(kotlin("reflect"))
 
     implementation(libs.assertj)
     implementation(platform(libs.junit.bom))
     testImplementation("org.junit.jupiter:junit-jupiter")
 
     errorprone(libs.errorprone)
+
+    "protobuf"(rootProject.files("build/protos"))
+}
+
+tasks.withType<ProtobufExtract> {
+    dependsOn(rootProject.tasks.named("downloadConformance"))
 }

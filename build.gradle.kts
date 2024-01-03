@@ -4,12 +4,24 @@ import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.SonatypeHost
 import net.ltgt.gradle.errorprone.CheckSeverity
 import net.ltgt.gradle.errorprone.errorprone
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     `java-library`
     alias(libs.plugins.errorprone)
     alias(libs.plugins.git)
     alias(libs.plugins.maven)
+    id("org.jetbrains.kotlin.jvm") version "1.9.20"
+}
+
+repositories {
+    mavenLocal()
+}
+
+kotlin {
+    compilerOptions {
+        target { jvmTarget = JvmTarget.JVM_1_8 }
+    }
 }
 
 java {
@@ -124,6 +136,17 @@ tasks.register<Exec>("generateConformance") {
     )
 }
 
+tasks.register<Exec>("downloadConformance") {
+    dependsOn("installBuf")
+    description = "Downloads protos for the bufbuild/protovalidate-testing module to conformance/build/protos."
+    commandLine(
+        bufCLIPath,
+        "export",
+        "buf.build/bufbuild/protovalidate-testing:${project.findProperty("protovalidate.version")}",
+        "--output=build/protos",
+    )
+}
+
 tasks.register("generate") {
     description = "Generates sources with buf generate and buf export."
     dependsOn(
@@ -163,9 +186,14 @@ tasks.withType<GenerateModuleMetadata> {
 }
 
 buildscript {
+    repositories {
+        mavenLocal()
+    }
+
     dependencies {
         classpath(libs.maven.plugin)
         classpath(libs.spotless)
+        classpath("com.toasttab.protokt:protokt-gradle-plugin:1.0.0-beta.2-SNAPSHOT")
     }
 }
 
@@ -180,7 +208,10 @@ sourceSets {
 apply(plugin = "com.diffplug.spotless")
 configure<SpotlessExtension> {
     java {
-        targetExclude("src/main/java/build/buf/validate/**/*.java", "build/generated/test-sources/bufgen/**/*.java")
+        targetExclude("src/main/java/build/buf/validate/**/*.java", "build/generated/**/*.java")
+    }
+    kotlin {
+        ktlint()
     }
     kotlinGradle {
         ktlint()
@@ -274,6 +305,8 @@ dependencies {
     implementation(libs.guava)
     implementation(libs.ipaddress)
     implementation(libs.jakarta.mail.api)
+    implementation(kotlin("reflect"))
+    implementation("com.toasttab.protokt:protokt-reflect:1.0.0-beta.2-SNAPSHOT")
 
     testImplementation(libs.assertj)
     testImplementation(platform(libs.junit.bom))
